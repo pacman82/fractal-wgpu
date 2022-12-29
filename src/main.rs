@@ -4,8 +4,9 @@ use anyhow::{Context, Error};
 use log::error;
 use wgpu::{
     Backends, CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features,
-    Limits, PresentMode, Queue, RequestAdapterOptions, RequestDeviceError, Surface,
-    SurfaceConfiguration, SurfaceError, TextureFormat, TextureUsages, TextureViewDescriptor,
+    Limits, Operations, PresentMode, Queue, RenderPassColorAttachment, RenderPassDescriptor,
+    RequestAdapterOptions, RequestDeviceError, Surface, SurfaceConfiguration, SurfaceError,
+    TextureFormat, TextureUsages, TextureViewDescriptor, Color,
 };
 use winit::{
     dpi::LogicalSize,
@@ -151,6 +152,21 @@ impl Canvas {
             .create_command_encoder(&CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
+        let rpd = RenderPassDescriptor {
+            label: Some("Main Render Pass"),
+            color_attachments: &[Some(RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: Operations {
+                    load: wgpu::LoadOp::Clear(Color { r: 0.3, g: 0.2, b: 0.7, a: 1.0 }),
+                    store: true,
+                },
+            })],
+            depth_stencil_attachment: None,
+        };
+        {
+            let _render_pass = encoder.begin_render_pass(&rpd);
+        }
         self.queue.submit(once(encoder.finish()));
         output.present();
         Ok(())
