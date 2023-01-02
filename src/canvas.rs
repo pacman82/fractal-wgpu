@@ -1,6 +1,14 @@
 use std::iter::once;
 
-use wgpu::{Surface, Device, Queue, TextureFormat, RequestDeviceError, Backends, RequestAdapterOptions, DeviceDescriptor, Features, Limits, SurfaceError, TextureViewDescriptor, CommandEncoderDescriptor, RenderPassDescriptor, RenderPassColorAttachment, Operations, Color, SurfaceConfiguration, TextureUsages, PresentMode, CompositeAlphaMode};
+use wgpu::{
+    Backends, BlendState, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
+    CompositeAlphaMode, Device, DeviceDescriptor, Features, FragmentState, Limits,
+    MultisampleState, Operations, PipelineLayoutDescriptor, PresentMode, PrimitiveState,
+    PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
+    RenderPipelineDescriptor, RequestAdapterOptions, RequestDeviceError, ShaderModuleDescriptor,
+    ShaderSource, Surface, SurfaceConfiguration, SurfaceError, TextureFormat, TextureUsages,
+    TextureViewDescriptor, VertexState,
+};
 use winit::window::Window;
 
 pub struct Canvas {
@@ -10,6 +18,7 @@ pub struct Canvas {
     device: Device,
     queue: Queue,
     format: TextureFormat,
+    render_pipeline: RenderPipeline,
 }
 
 impl Canvas {
@@ -42,6 +51,53 @@ impl Canvas {
             .await?;
         // The first format in the array is the prefered one.
         let format = surface.get_supported_formats(&adapter)[0];
+        // Create render pipeline
+        let shader = device.create_shader_module(ShaderModuleDescriptor {
+            label: Some("Shader"),
+            source: ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+        });
+        let render_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
+            label: Some("Render Pipeline Layout"),
+            bind_group_layouts: &[],
+            push_constant_ranges: &[],
+        });
+        let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
+            label: Some("Render Pipeline"),
+            layout: Some(&render_pipeline_layout),
+            vertex: VertexState {
+                module: &shader,
+                entry_point: "vs_main",
+                buffers: &[],
+            },
+            fragment: Some(FragmentState {
+                module: &shader,
+                entry_point: "fs_main",
+                targets: &[Some(ColorTargetState {
+                    format,
+                    blend: Some(BlendState::REPLACE),
+                    write_mask: ColorWrites::ALL,
+                })],
+            }),
+            primitive: PrimitiveState {
+                topology: PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: Some(wgpu::Face::Back),
+                // Requires Features::DEPTH_CLIP_CONTROL
+                unclipped_depth: false,
+                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+                polygon_mode: wgpu::PolygonMode::Fill,
+                // Requires Features::CONSERVATIVE_RASTERIZATION
+                conservative: false,
+            },
+            depth_stencil: None,
+            multiview: None,
+            multisample: MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+        });
         Ok(Self {
             width,
             height,
@@ -49,6 +105,7 @@ impl Canvas {
             device,
             queue,
             format,
+            render_pipeline,
         })
     }
 
@@ -71,9 +128,7 @@ impl Canvas {
                 self.configure_surface();
                 self.surface.get_current_texture()?
             }
-            Err(other) => {
-                return Err(other)
-            }
+            Err(other) => return Err(other),
         };
         let view = output
             .texture
@@ -89,14 +144,21 @@ impl Canvas {
                 view: &view,
                 resolve_target: None,
                 ops: Operations {
-                    load: wgpu::LoadOp::Clear(Color { r: 0.3, g: 0.2, b: 0.7, a: 1.0 }),
+                    load: wgpu::LoadOp::Clear(Color {
+                        r: 0.3,
+                        g: 0.2,
+                        b: 0.7,
+                        a: 1.0,
+                    }),
                     store: true,
                 },
             })],
             depth_stencil_attachment: None,
         };
         {
-            let _render_pass = encoder.begin_render_pass(&rpd);
+            let mut render_pass = encoder.begin_render_pass(&rpd);
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.draw(0..3, 0..1);
         }
         self.queue.submit(once(encoder.finish()));
         output.present();
