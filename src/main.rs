@@ -35,7 +35,6 @@ async fn run() -> Result<(), Error> {
             .await
             .context("Error requesting device for drawing")?
     };
-    canvas.configure_surface();
 
     event_loop.run(move |event, _target, control_flow| match event {
         Event::WindowEvent {

@@ -98,7 +98,7 @@ impl Canvas {
                 alpha_to_coverage_enabled: false,
             },
         });
-        Ok(Self {
+        let canvas = Self {
             width,
             height,
             surface,
@@ -106,7 +106,9 @@ impl Canvas {
             queue,
             format,
             render_pipeline,
-        })
+        };
+        canvas.configure_surface();
+        Ok(canvas)
     }
 
     /// Resize canvas to new size in pixels. Ignored if either width or height is zero.
@@ -165,7 +167,7 @@ impl Canvas {
         Ok(())
     }
 
-    pub fn configure_surface(&self) {
+    fn configure_surface(&self) {
         let config = SurfaceConfiguration {
             usage: TextureUsages::RENDER_ATTACHMENT,
             format: self.format,
