@@ -85,7 +85,7 @@ impl Canvas {
                 })],
             }),
             primitive: PrimitiveState {
-                topology: PrimitiveTopology::TriangleList,
+                topology: PrimitiveTopology::TriangleStrip,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Back),
@@ -174,7 +174,7 @@ impl Canvas {
             let mut render_pass = encoder.begin_render_pass(&rpd);
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw(0..3, 0..1);
+            render_pass.draw(0..(VERTICES.len() as u32), 0..1);
         }
         self.queue.submit(once(encoder.finish()));
         output.present();
