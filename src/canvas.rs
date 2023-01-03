@@ -1,13 +1,16 @@
-use std::iter::once;
+use std::{iter::once, mem::size_of};
 
+use bytemuck::{Pod, Zeroable};
 use wgpu::{
-    Backends, BlendState, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor,
-    CompositeAlphaMode, Device, DeviceDescriptor, Features, FragmentState, Limits,
-    MultisampleState, Operations, PipelineLayoutDescriptor, PresentMode, PrimitiveState,
-    PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-    RenderPipelineDescriptor, RequestAdapterOptions, RequestDeviceError, ShaderModuleDescriptor,
-    ShaderSource, Surface, SurfaceConfiguration, SurfaceError, TextureFormat, TextureUsages,
-    TextureViewDescriptor, VertexState,
+    util::{BufferInitDescriptor, DeviceExt},
+    Backends, BlendState, Buffer, BufferUsages, Color, ColorTargetState, ColorWrites,
+    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features,
+    FragmentState, Limits, MultisampleState, Operations, PipelineLayoutDescriptor, PresentMode,
+    PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor,
+    RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions, RequestDeviceError,
+    ShaderModuleDescriptor, ShaderSource, Surface, SurfaceConfiguration, SurfaceError,
+    TextureFormat, TextureUsages, TextureViewDescriptor, VertexAttribute, VertexBufferLayout,
+    VertexFormat, VertexState, VertexStepMode,
 };
 use winit::window::Window;
 
@@ -19,6 +22,7 @@ pub struct Canvas {
     queue: Queue,
     format: TextureFormat,
     render_pipeline: RenderPipeline,
+    vertex_buffer: Buffer,
 }
 
 impl Canvas {
@@ -67,7 +71,9 @@ impl Canvas {
             vertex: VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[],
+                buffers: &[
+                    Vertex::DESC
+                ],
             },
             fragment: Some(FragmentState {
                 module: &shader,
@@ -98,6 +104,11 @@ impl Canvas {
                 alpha_to_coverage_enabled: false,
             },
         });
+        let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("Canvas Vertex Buffer"),
+            contents: bytemuck::cast_slice(VERTICES),
+            usage: BufferUsages::VERTEX,
+        });
         let canvas = Self {
             width,
             height,
@@ -106,8 +117,10 @@ impl Canvas {
             queue,
             format,
             render_pipeline,
+            vertex_buffer,
         };
         canvas.configure_surface();
+
         Ok(canvas)
     }
 
@@ -160,6 +173,7 @@ impl Canvas {
         {
             let mut render_pass = encoder.begin_render_pass(&rpd);
             render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.draw(0..3, 0..1);
         }
         self.queue.submit(once(encoder.finish()));
@@ -179,3 +193,37 @@ impl Canvas {
         self.surface.configure(&self.device, &config)
     }
 }
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+struct Vertex {
+    position: [f32; 2],
+}
+
+impl Vertex {
+    const DESC: VertexBufferLayout<'static> = VertexBufferLayout {
+        array_stride: size_of::<Self>() as u64,
+        step_mode: VertexStepMode::Vertex,
+        attributes: &[VertexAttribute {
+            format: VertexFormat::Float32x2,
+            offset: 0,
+            shader_location: 0,
+        }],
+    };
+}
+
+/// Rectangle vertex strip spanning the entire surface
+const VERTICES: &[Vertex] = &[
+    Vertex {
+        position: [-1.0, 1.0],
+    },
+    Vertex {
+        position: [-1.0, -1.0],
+    },
+    Vertex {
+        position: [1.0, 1.0],
+    },
+    Vertex {
+        position: [1.0, -1.0],
+    },
+];
