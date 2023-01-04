@@ -4,6 +4,7 @@ struct VertexInput {
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
+    @location(0) coords: vec2<f32>
 };
 
 @vertex
@@ -12,6 +13,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = vec4<f32>(plane.position, 0.0, 1.0);
+    out.coords = plane.position;
     return out;
 }
 
@@ -19,13 +21,13 @@ fn vs_main(
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Find out how quickly the position in the complex plane
     // diverges.
-    let c = vec2<f32>(in.clip_position.x, in.clip_position.y);
+    let c = in.coords;
     var z = vec2<f32>(0.0, 0.0);
     var i = 0;
     let iter = 500;
     for (i=iter; i != 0; i--){
-        var real = z.x * z.x - z.y * z.y + c.x;
-        var imag = 2.0 * z.x * z.y + c.y;
+        let real = z.x * z.x - z.y * z.y + c.x;
+        let imag = 2.0 * z.x * z.y + c.y;
 
         // Sequences with abs(z) > 2 will always diverge
         if (real * real + imag * imag > 4.0) {
