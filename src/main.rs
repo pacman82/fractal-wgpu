@@ -10,6 +10,7 @@ use winit::{
 use self::canvas::Canvas;
 
 mod canvas;
+mod camera;
 
 const WIDTH: u32 = 400;
 const HEIGHT: u32 = 300;
