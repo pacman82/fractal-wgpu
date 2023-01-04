@@ -17,5 +17,37 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(0.3, 0.2, 0.1, 1.0);
+    // Find out how quickly the position in the complex plane
+    // diverges.
+    let c = vec2<f32>(in.clip_position.x, in.clip_position.y);
+    var z = vec2<f32>(0.0, 0.0);
+    var i = 0;
+    let iter = 500;
+    for (i=iter; i != 0; i--){
+        var real = z.x * z.x - z.y * z.y + c.x;
+        var imag = 2.0 * z.x * z.y + c.y;
+
+        // Sequences with abs(z) > 2 will always diverge
+        if (real * real + imag * imag > 4.0) {
+            break;
+        }
+
+        z.x = real;
+        z.y = imag;
+    }
+    let conv = f32(i) / f32(iter);
+
+    var red: f32;
+    var blue: f32;
+    if i == 0 {
+        red = 0.0;
+        blue = 0.0;
+    } else {
+        red = 1.0 - conv;
+        blue = conv;
+    }
+    let green = 0.0;
+
+    let color = vec4<f32>(red, green, blue, 1.0);
+    return color;
 }
