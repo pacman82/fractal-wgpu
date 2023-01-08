@@ -1,7 +1,7 @@
 use wgpu::{
     BindGroup, BlendState, ColorTargetState, ColorWrites, Device, FragmentState, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState, BufferUsages, util::{BufferInitDescriptor, DeviceExt}, Buffer,
+    PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState, BufferUsages, util::{BufferInitDescriptor, DeviceExt}, Buffer, TextureView, CommandEncoder, RenderPassDescriptor, RenderPassColorAttachment, Operations, Color,
 };
 
 use crate::{
@@ -91,10 +91,27 @@ impl CanvasRenderPipeline {
         }
     }
 
-    pub fn draw<'s, 'p>(&'s self, render_pass: &mut RenderPass<'p>)
-    where
-        's: 'p,
+    pub fn draw_to(&self, output: &TextureView, encoder: &mut CommandEncoder)
     {
+        let rpd = RenderPassDescriptor {
+            label: Some("Main Render Pass"),
+            color_attachments: &[Some(RenderPassColorAttachment {
+                view: output,
+                resolve_target: None,
+                ops: Operations {
+                    load: wgpu::LoadOp::Clear(Color {
+                        r: 0.3,
+                        g: 0.2,
+                        b: 0.7,
+                        a: 1.0,
+                    }),
+                    store: true,
+                },
+            })],
+            depth_stencil_attachment: None,
+        };
+        
+        let mut render_pass = encoder.begin_render_pass(&rpd);
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.inv_view_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));

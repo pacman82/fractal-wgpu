@@ -1,10 +1,9 @@
 use std::iter::once;
 
 use wgpu::{
-    Backends, Color, CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor,
-    Features, Limits, Operations, PresentMode, Queue, RenderPassColorAttachment,
-    RenderPassDescriptor, RequestAdapterOptions, RequestDeviceError, Surface, SurfaceConfiguration,
-    SurfaceError, TextureFormat, TextureUsages, TextureViewDescriptor,
+    Backends, CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features,
+    Limits, PresentMode, Queue, RequestAdapterOptions, RequestDeviceError, Surface,
+    SurfaceConfiguration, SurfaceError, TextureFormat, TextureUsages, TextureViewDescriptor,
 };
 use winit::window::Window;
 
@@ -107,27 +106,7 @@ impl Canvas {
             .create_command_encoder(&CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
-        let rpd = RenderPassDescriptor {
-            label: Some("Main Render Pass"),
-            color_attachments: &[Some(RenderPassColorAttachment {
-                view: &view,
-                resolve_target: None,
-                ops: Operations {
-                    load: wgpu::LoadOp::Clear(Color {
-                        r: 0.3,
-                        g: 0.2,
-                        b: 0.7,
-                        a: 1.0,
-                    }),
-                    store: true,
-                },
-            })],
-            depth_stencil_attachment: None,
-        };
-        {
-            let mut render_pass = encoder.begin_render_pass(&rpd);
-            self.render_pipeline.draw(&mut render_pass);
-        }
+        self.render_pipeline.draw_to(&view, &mut encoder);
         self.queue.submit(once(encoder.finish()));
         output.present();
         Ok(())
