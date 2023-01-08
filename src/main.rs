@@ -11,7 +11,8 @@ use self::canvas::Canvas;
 
 mod canvas;
 mod camera;
-mod vertex;
+mod shader;
+mod canvas_render_pipeline;
 
 const WIDTH: u32 = 400;
 const HEIGHT: u32 = 400;

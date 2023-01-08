@@ -1,30 +1,20 @@
 use std::iter::once;
 
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    Backends, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingType, BlendState, Buffer, BufferBindingType, BufferUsages, Color,
-    ColorTargetState, ColorWrites, CommandEncoderDescriptor, CompositeAlphaMode, Device,
-    DeviceDescriptor, Features, FragmentState, Limits, MultisampleState, Operations,
-    PipelineLayoutDescriptor, PresentMode, PrimitiveState, PrimitiveTopology, Queue,
-    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
-    RequestAdapterOptions, RequestDeviceError, ShaderModuleDescriptor, ShaderSource, ShaderStages,
-    Surface, SurfaceConfiguration, SurfaceError, TextureFormat, TextureUsages,
-    TextureViewDescriptor, VertexState,
+    Backends, Color, CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor,
+    Features, Limits, Operations, PresentMode, Queue, RenderPassColorAttachment,
+    RenderPassDescriptor, RequestAdapterOptions, RequestDeviceError, Surface, SurfaceConfiguration,
+    SurfaceError, TextureFormat, TextureUsages, TextureViewDescriptor,
 };
 use winit::window::Window;
 
-use crate::{
-    camera::Camera,
-    vertex::{Vertex, VERTICES},
-};
+use crate::{camera::Camera, canvas_render_pipeline::CanvasRenderPipeline};
 
 pub struct Canvas {
     /// Width of output surface in pixels.
     width: u32,
     /// Height of output surface in pixels.
     height: u32,
-    camera: Camera,
     /// The surface we are rendering to. It is linked to the inner part of the window passed in the
     /// constructor.
     surface: Surface,
@@ -34,10 +24,7 @@ pub struct Canvas {
     /// A device is used to create buffers (for exchanging data with the GPU) among other things.
     device: Device,
     queue: Queue,
-    render_pipeline: RenderPipeline,
-    vertex_buffer: Buffer,
-    inv_view_buffer: Buffer,
-    inv_view_bind_group: BindGroup,
+    render_pipeline: CanvasRenderPipeline,
 }
 
 impl Canvas {
@@ -74,89 +61,8 @@ impl Canvas {
 
         // Inverse view Matrix
         let camera = Camera::new();
-        let inv_view_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Inverse view matrix"),
-            contents: bytemuck::cast_slice(&[camera.inv_view()]),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
-        let inv_view_bind_group_layout =
-            device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-                label: Some("Inverse View Bind Group Layout"),
-                entries: &[BindGroupLayoutEntry {
-                    // Must match shader index
-                    binding: 0,
-                    // We only need this in the vertex shader
-                    visibility: ShaderStages::VERTEX,
-                    ty: BindingType::Buffer {
-                        // All vertices see the same matrix
-                        ty: BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-            });
-        let inv_view_bind_group = device.create_bind_group(&BindGroupDescriptor {
-            label: Some("Inverse View Matrix Bind Group"),
-            layout: &inv_view_bind_group_layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: inv_view_buffer.as_entire_binding(),
-            }],
-        });
 
-        // Create render pipeline
-        let shader = device.create_shader_module(ShaderModuleDescriptor {
-            label: Some("Shader"),
-            source: ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
-        });
-        let render_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[&inv_view_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-        let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                buffers: &[Vertex::DESC],
-            },
-            fragment: Some(FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                targets: &[Some(ColorTargetState {
-                    format,
-                    blend: Some(BlendState::REPLACE),
-                    write_mask: ColorWrites::ALL,
-                })],
-            }),
-            primitive: PrimitiveState {
-                topology: PrimitiveTopology::TriangleStrip,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                // Requires Features::DEPTH_CLIP_CONTROL
-                unclipped_depth: false,
-                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-                polygon_mode: wgpu::PolygonMode::Fill,
-                // Requires Features::CONSERVATIVE_RASTERIZATION
-                conservative: false,
-            },
-            depth_stencil: None,
-            multiview: None,
-            multisample: MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-        });
-        let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Canvas vertices"),
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: BufferUsages::VERTEX,
-        });
+        let render_pipeline = CanvasRenderPipeline::new(&device, format, camera.inv_view());
 
         let canvas = Self {
             width,
@@ -166,10 +72,6 @@ impl Canvas {
             queue,
             format,
             render_pipeline,
-            vertex_buffer,
-            inv_view_buffer,
-            inv_view_bind_group,
-            camera,
         };
         canvas.configure_surface();
 
@@ -224,10 +126,7 @@ impl Canvas {
         };
         {
             let mut render_pass = encoder.begin_render_pass(&rpd);
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.inv_view_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw(0..(VERTICES.len() as u32), 0..1);
+            self.render_pipeline.draw(&mut render_pass);
         }
         self.queue.submit(once(encoder.finish()));
         output.present();
