@@ -14,11 +14,15 @@ impl Camera {
     }
 
     /// Inverse view matrix, transforms from canvas space, to the space of the coordinate system.
-    pub fn inv_view(&self) -> [[f32;3];3] {
+    /// 
+    /// Translates and zooms. Columnwise defined.
+    pub fn inv_view(&self) -> [[f32;2];3] {
+        // [ 1/z  0   tx]    | x |   | x/z + tx |
+        // [  0  1/z  ty]  x | y | = | y/z - ty |
         [
-            [1. / self.zoom, 0., 0.],
-            [0., 1. / self.zoom, 0.],
-            [self.pos_x, self.pos_y, 1.],
+            [1. / self.zoom, 0.],
+            [0., 1. / self.zoom],
+            [self.pos_x, self.pos_y],
         ]
     }
 }

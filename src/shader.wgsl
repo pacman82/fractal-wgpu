@@ -1,9 +1,5 @@
-struct Camera{
-    inv_view: mat3x3<f32>,
-}
-
 @group(0) @binding(0)
-var<uniform> camera: Camera;
+var<uniform> INV_VIEW: mat3x2<f32>;
 
 struct VertexInput {
     @location(0) position: vec2<f32>,
@@ -11,7 +7,7 @@ struct VertexInput {
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) coords: vec2<f32>
+    @location(0) coords: vec2<f32>,
 };
 
 @vertex
@@ -19,9 +15,8 @@ fn vs_main(
     plane: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-    // let position = camera.inv_view * vec3<f32>(plane.position, 1.0);
-    out.clip_position = vec4<f32>(plane.position.x, plane.position.y, 0.0, 1.0);
-    out.coords = plane.position;
+    out.clip_position = vec4<f32>(plane.position, 0.0, 1.0);
+    out.coords = (INV_VIEW * vec3<f32>(plane.position, 1.0));
     return out;
 }
 
