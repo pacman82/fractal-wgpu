@@ -11,9 +11,10 @@ use self::canvas::Canvas;
 
 mod canvas;
 mod camera;
+mod vertex;
 
 const WIDTH: u32 = 400;
-const HEIGHT: u32 = 300;
+const HEIGHT: u32 = 400;
 
 fn main() -> Result<(), Error> {
     // We need logger to see wgpu error output

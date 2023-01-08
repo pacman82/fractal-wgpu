@@ -1,31 +1,47 @@
-use std::{iter::once, mem::size_of};
+use std::iter::once;
 
-use bytemuck::{Pod, Zeroable};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    Backends, BlendState, Buffer, BufferUsages, Color, ColorTargetState, ColorWrites,
-    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features,
-    FragmentState, Limits, MultisampleState, Operations, PipelineLayoutDescriptor, PresentMode,
-    PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor,
-    RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions, RequestDeviceError,
-    ShaderModuleDescriptor, ShaderSource, Surface, SurfaceConfiguration, SurfaceError,
-    TextureFormat, TextureUsages, TextureViewDescriptor, VertexAttribute, VertexBufferLayout,
-    VertexFormat, VertexState, VertexStepMode,
+    Backends, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
+    BindGroupLayoutEntry, BindingType, BlendState, Buffer, BufferBindingType, BufferUsages, Color,
+    ColorTargetState, ColorWrites, CommandEncoderDescriptor, CompositeAlphaMode, Device,
+    DeviceDescriptor, Features, FragmentState, Limits, MultisampleState, Operations,
+    PipelineLayoutDescriptor, PresentMode, PrimitiveState, PrimitiveTopology, Queue,
+    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
+    RequestAdapterOptions, RequestDeviceError, ShaderModuleDescriptor, ShaderSource, ShaderStages,
+    Surface, SurfaceConfiguration, SurfaceError, TextureFormat, TextureUsages,
+    TextureViewDescriptor, VertexState,
 };
 use winit::window::Window;
 
+use crate::{
+    camera::Camera,
+    vertex::{Vertex, VERTICES},
+};
+
 pub struct Canvas {
+    /// Width of output surface in pixels.
     width: u32,
+    /// Height of output surface in pixels.
     height: u32,
+    camera: Camera,
+    /// The surface we are rendering to. It is linked to the inner part of the window passed in the
+    /// constructor.
     surface: Surface,
+    /// The format of the texture. It is acquired using the preferred format of the adapter and we
+    /// remember it, so we can recreate the surface if it becomes invalid.
+    format: TextureFormat,
+    /// A device is used to create buffers (for exchanging data with the GPU) among other things.
     device: Device,
     queue: Queue,
-    format: TextureFormat,
     render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
+    inv_view_buffer: Buffer,
+    inv_view_bind_group: BindGroup,
 }
 
 impl Canvas {
+    /// Construct a new canvas and link it to a window. Height and width are specified in pixels.
     pub async unsafe fn new(
         width: u32,
         height: u32,
@@ -55,6 +71,40 @@ impl Canvas {
             .await?;
         // The first format in the array is the prefered one.
         let format = surface.get_supported_formats(&adapter)[0];
+
+        // Inverse view Matrix
+        let camera = Camera::new();
+        let inv_view_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("Inverse view matrix"),
+            contents: bytemuck::cast_slice(&[camera.inv_view()]),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        });
+        let inv_view_bind_group_layout =
+            device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+                label: Some("Inverse View Bind Group Layout"),
+                entries: &[BindGroupLayoutEntry {
+                    // Must match shader index
+                    binding: 0,
+                    // We only need this in the vertex shader
+                    visibility: ShaderStages::VERTEX,
+                    ty: BindingType::Buffer {
+                        // All vertices see the same matrix
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+        let inv_view_bind_group = device.create_bind_group(&BindGroupDescriptor {
+            label: Some("Inverse View Matrix Bind Group"),
+            layout: &inv_view_bind_group_layout,
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: inv_view_buffer.as_entire_binding(),
+            }],
+        });
+
         // Create render pipeline
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -62,7 +112,7 @@ impl Canvas {
         });
         let render_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[],
+            bind_group_layouts: &[&inv_view_bind_group_layout],
             push_constant_ranges: &[],
         });
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
@@ -71,9 +121,7 @@ impl Canvas {
             vertex: VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[
-                    Vertex::DESC
-                ],
+                buffers: &[Vertex::DESC],
             },
             fragment: Some(FragmentState {
                 module: &shader,
@@ -105,10 +153,11 @@ impl Canvas {
             },
         });
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Canvas Vertex Buffer"),
+            label: Some("Canvas vertices"),
             contents: bytemuck::cast_slice(VERTICES),
             usage: BufferUsages::VERTEX,
         });
+
         let canvas = Self {
             width,
             height,
@@ -118,6 +167,9 @@ impl Canvas {
             format,
             render_pipeline,
             vertex_buffer,
+            inv_view_buffer,
+            inv_view_bind_group,
+            camera,
         };
         canvas.configure_surface();
 
@@ -173,6 +225,7 @@ impl Canvas {
         {
             let mut render_pass = encoder.begin_render_pass(&rpd);
             render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, &self.inv_view_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.draw(0..(VERTICES.len() as u32), 0..1);
         }
@@ -193,37 +246,3 @@ impl Canvas {
         self.surface.configure(&self.device, &config)
     }
 }
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct Vertex {
-    position: [f32; 2],
-}
-
-impl Vertex {
-    const DESC: VertexBufferLayout<'static> = VertexBufferLayout {
-        array_stride: size_of::<Self>() as u64,
-        step_mode: VertexStepMode::Vertex,
-        attributes: &[VertexAttribute {
-            format: VertexFormat::Float32x2,
-            offset: 0,
-            shader_location: 0,
-        }],
-    };
-}
-
-/// Rectangle vertex strip spanning the entire surface
-const VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [-1.0, 1.0],
-    },
-    Vertex {
-        position: [-1.0, -1.0],
-    },
-    Vertex {
-        position: [1.0, 1.0],
-    },
-    Vertex {
-        position: [1.0, -1.0],
-    },
-];
