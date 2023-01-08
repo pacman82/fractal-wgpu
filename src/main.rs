@@ -1,4 +1,5 @@
 use anyhow::{Context, Error};
+use camera::Camera;
 use log::error;
 use winit::{
     dpi::LogicalSize,
@@ -39,6 +40,8 @@ async fn run() -> Result<(), Error> {
             .context("Error requesting device for drawing")?
     };
 
+    let camera = Camera::new();
+
     event_loop.run(move |event, _target, control_flow| match event {
         Event::WindowEvent {
             window_id: _,
@@ -63,7 +66,7 @@ async fn run() -> Result<(), Error> {
             canvas.resize(new_inner_size.width, new_inner_size.height);
         }
         Event::RedrawRequested(_window_id) => {
-            match canvas.render() {
+            match canvas.render(&camera) {
                 Ok(_) => (),
                 // Most errors (Outdated, Timeout) should be resolved by the next frame
                 Err(e) => error!("{e}"),

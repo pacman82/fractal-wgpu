@@ -1,12 +1,13 @@
 use wgpu::{
-    BindGroup, BlendState, ColorTargetState, ColorWrites, Device, FragmentState, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState, BufferUsages, util::{BufferInitDescriptor, DeviceExt}, Buffer, TextureView, CommandEncoder, RenderPassDescriptor, RenderPassColorAttachment, Operations, Color,
+    util::{BufferInitDescriptor, DeviceExt},
+    BindGroup, BlendState, Buffer, BufferUsages, Color, ColorTargetState, ColorWrites,
+    CommandEncoder, Device, FragmentState, MultisampleState, Operations, PipelineLayoutDescriptor,
+    PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor,
+    RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat,
+    TextureView, VertexState,
 };
 
-use crate::{
-    shader::{inv_view_uniform, CANVAS_SHADER_SOURCE, Vertex},
-};
+use crate::shader::{inv_view_uniform, Vertex, CANVAS_SHADER_SOURCE};
 
 /// A specialised render pipeline for our 2D canvas.
 ///
@@ -16,7 +17,11 @@ pub struct CanvasRenderPipeline {
     render_pipeline: RenderPipeline,
     /// Used to pass the coordinates of the canvas to the shader in each render pass.
     vertex_buffer: Buffer,
-    /// Used to pass the matrix to the vertex shader in each render pass.
+    /// We hold the buffer explicitly, so we can manipulate its contents between frames to change
+    /// the camera positon.
+    inv_view_buffer: Buffer,
+    /// Used to pass the inverse view matrix in `inv_view_buffer` to the vertex shader in each
+    /// render pass.
     inv_view_bind_group: BindGroup,
 }
 
@@ -24,7 +29,6 @@ impl CanvasRenderPipeline {
     pub fn new(
         device: &Device,
         surface_format: TextureFormat,
-        initial_inv_view: [[f32; 2]; 3],
     ) -> Self {
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("Canvas Shader"),
@@ -37,7 +41,8 @@ impl CanvasRenderPipeline {
             usage: BufferUsages::VERTEX,
         });
 
-        let (inv_view_layout, _inv_view_buffer, inv_view_bind_group) =
+        let initial_inv_view = [[0., 0.]; 3];
+        let (inv_view_layout, inv_view_buffer, inv_view_bind_group) =
             inv_view_uniform(device, initial_inv_view);
 
         let layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
@@ -86,13 +91,24 @@ impl CanvasRenderPipeline {
 
         CanvasRenderPipeline {
             render_pipeline,
+            inv_view_buffer,
             vertex_buffer,
             inv_view_bind_group,
         }
     }
 
-    pub fn draw_to(&self, output: &TextureView, encoder: &mut CommandEncoder)
-    {
+    pub fn draw_to(
+        &self,
+        inv_view_matrix: [[f32; 2]; 3],
+        output: &TextureView,
+        encoder: &mut CommandEncoder,
+        queue: &Queue,
+    ) {
+        queue.write_buffer(
+            &self.inv_view_buffer,
+            0,
+            bytemuck::cast_slice(&[inv_view_matrix]),
+        );
         let rpd = RenderPassDescriptor {
             label: Some("Main Render Pass"),
             color_attachments: &[Some(RenderPassColorAttachment {
@@ -110,7 +126,7 @@ impl CanvasRenderPipeline {
             })],
             depth_stencil_attachment: None,
         };
-        
+
         let mut render_pass = encoder.begin_render_pass(&rpd);
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.inv_view_bind_group, &[]);
