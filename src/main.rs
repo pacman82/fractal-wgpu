@@ -18,9 +18,13 @@ mod shader;
 const WIDTH: u32 = 400;
 const HEIGHT: u32 = 400;
 
+const GREETING: &str = include_str!("greeting.txt");
+
 fn main() -> Result<(), Error> {
     // We need logger to see wgpu error output
     env_logger::init();
+
+    println!("{GREETING}");
 
     // WGP offers async function calls, pollster is a minimal async runtime
     pollster::block_on(run())
@@ -74,12 +78,13 @@ async fn run() -> Result<(), Error> {
                         scancode: _,
                         state: ElementState::Pressed,
                         virtual_keycode: Some(keycode),
-                        modifiers: _,
+                        ..
                     },
                     is_synthetic: _,
                 },
         } => {
             change_camera(&mut camera, keycode);
+            window.request_redraw();
         }
         Event::RedrawRequested(_window_id) => {
             match canvas.render(&camera) {
@@ -96,12 +101,13 @@ fn change_camera(camera: &mut Camera, keycode: VirtualKeyCode) {
     // Step size
     let s = 0.1;
     match keycode {
-        VirtualKeyCode::Left => camera.change_pos((-s, 0.)),
-        VirtualKeyCode::Up => camera.change_pos((s, 0.)),
-        VirtualKeyCode::Right => camera.change_pos((s, 0.)),
-        VirtualKeyCode::Down => camera.change_pos((0., -s)),
+        VirtualKeyCode::Left => camera.change_pos(-s, 0.),
+        VirtualKeyCode::Up => camera.change_pos(0., s),
+        VirtualKeyCode::Right => camera.change_pos(s, 0.),
+        VirtualKeyCode::Down => camera.change_pos(0., -s),
         // VirtualKeyCode::Back => (),
-        // VirtualKeyCode::Plus => (),
+        VirtualKeyCode::Period => camera.zoom(1.02),
+        VirtualKeyCode::Comma => camera.zoom(1. / 1.02),
         _ => ()
     };
 

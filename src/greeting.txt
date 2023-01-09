@@ -1,0 +1,5 @@
+Hello dear user,
+
+this program renders fractals in real time and allows you to view different parts of it and zoom in and out. You can use the arrow keys to move the visible part up, down, left or right. In order to zoom in use period (`.`) and to zoom out comma (`,`).
+
+Have fun!
