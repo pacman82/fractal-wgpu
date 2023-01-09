@@ -104,7 +104,8 @@ impl Canvas {
             .create_command_encoder(&CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
-        self.render_pipeline.draw_to(camera.inv_view(), &view, &mut encoder, &self.queue);
+        self.render_pipeline.update_buffers(&self.queue, camera.inv_view());
+        self.render_pipeline.draw_to(&view, &mut encoder);
         self.queue.submit(once(encoder.finish()));
         output.present();
         Ok(())

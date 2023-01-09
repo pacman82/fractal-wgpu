@@ -26,6 +26,12 @@ pub struct CanvasRenderPipeline {
 }
 
 impl CanvasRenderPipeline {
+    /// Creates a new render pipeline for our canvas.
+    /// 
+    /// # Parameters
+    /// 
+    /// * `device` is used to create the render pipeline, load shaders and bind buffers.
+    /// * `surface_format` is the format of the target (output) for the render pipeline.
     pub fn new(
         device: &Device,
         surface_format: TextureFormat,
@@ -97,18 +103,20 @@ impl CanvasRenderPipeline {
         }
     }
 
-    pub fn draw_to(
-        &self,
-        inv_view_matrix: [[f32; 2]; 3],
-        output: &TextureView,
-        encoder: &mut CommandEncoder,
-        queue: &Queue,
-    ) {
+    /// Updates the buffers submitted to the shaders in each frame.
+    pub fn update_buffers(&self, queue: &Queue, inv_view_matrix: [[f32; 2]; 3]) {
         queue.write_buffer(
             &self.inv_view_buffer,
             0,
             bytemuck::cast_slice(&[inv_view_matrix]),
         );
+    }
+
+    pub fn draw_to(
+        &self,
+        output: &TextureView,
+        encoder: &mut CommandEncoder,
+    ) {
         let rpd = RenderPassDescriptor {
             label: Some("Main Render Pass"),
             color_attachments: &[Some(RenderPassColorAttachment {
