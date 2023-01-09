@@ -3,17 +3,17 @@ use camera::Camera;
 use log::error;
 use winit::{
     dpi::LogicalSize,
-    event::{Event, WindowEvent},
+    event::{Event, WindowEvent, KeyboardInput, VirtualKeyCode, ElementState},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
 
 use self::canvas::Canvas;
 
-mod canvas;
 mod camera;
-mod shader;
+mod canvas;
 mod canvas_render_pipeline;
+mod shader;
 
 const WIDTH: u32 = 400;
 const HEIGHT: u32 = 400;
@@ -40,7 +40,7 @@ async fn run() -> Result<(), Error> {
             .context("Error requesting device for drawing")?
     };
 
-    let camera = Camera::new();
+    let mut camera = Camera::new();
 
     event_loop.run(move |event, _target, control_flow| match event {
         Event::WindowEvent {
@@ -65,6 +65,22 @@ async fn run() -> Result<(), Error> {
         } => {
             canvas.resize(new_inner_size.width, new_inner_size.height);
         }
+        Event::WindowEvent {
+            window_id: _,
+            event:
+                WindowEvent::KeyboardInput {
+                    device_id: _,
+                    input: KeyboardInput {
+                        scancode: _,
+                        state: ElementState::Pressed,
+                        virtual_keycode: Some(keycode),
+                        modifiers: _,
+                    },
+                    is_synthetic: _,
+                },
+        } => {
+            change_camera(&mut camera, keycode);
+        }
         Event::RedrawRequested(_window_id) => {
             match canvas.render(&camera) {
                 Ok(_) => (),
@@ -74,4 +90,19 @@ async fn run() -> Result<(), Error> {
         }
         _ => (),
     });
+}
+
+fn change_camera(camera: &mut Camera, keycode: VirtualKeyCode) {
+    // Step size
+    let s = 0.1;
+    match keycode {
+        VirtualKeyCode::Left => camera.change_pos((-s, 0.)),
+        VirtualKeyCode::Up => camera.change_pos((s, 0.)),
+        VirtualKeyCode::Right => camera.change_pos((s, 0.)),
+        VirtualKeyCode::Down => camera.change_pos((0., -s)),
+        // VirtualKeyCode::Back => (),
+        // VirtualKeyCode::Plus => (),
+        _ => ()
+    };
+
 }

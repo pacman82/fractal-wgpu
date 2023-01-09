@@ -25,4 +25,9 @@ impl Camera {
             [self.pos_x, self.pos_y],
         ]
     }
+
+    pub fn change_pos(&mut self, delta: (f32, f32)) {
+        self.pos_x += delta.0 / self.zoom;
+        self.pos_y += delta.1 / self.zoom
+    }
 }
