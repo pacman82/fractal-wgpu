@@ -5,7 +5,7 @@ use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingType, Buffer, BufferBindingType, BufferUsages, Device,
-    ShaderStages, VertexBufferLayout, VertexStepMode, VertexAttribute, VertexFormat,
+    ShaderStages, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode,
 };
 
 /// Source used to compile the shader code at startup

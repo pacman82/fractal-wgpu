@@ -1,9 +1,10 @@
 use anyhow::{Context, Error};
 use camera::Camera;
+use controls::Controls;
 use log::error;
 use winit::{
     dpi::LogicalSize,
-    event::{Event, WindowEvent, KeyboardInput, VirtualKeyCode, ElementState},
+    event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
@@ -13,6 +14,7 @@ use self::canvas::Canvas;
 mod camera;
 mod canvas;
 mod canvas_render_pipeline;
+mod controls;
 mod shader;
 
 const WIDTH: u32 = 400;
@@ -44,7 +46,13 @@ async fn run() -> Result<(), Error> {
             .context("Error requesting device for drawing")?
     };
 
+    // Keeps track of request redraw request, e.g if the window has been partially hidden behind
+    // another window, ro is resized.
+    let mut redraw_requested = true;
+    // True if the picture we want to display on the canvas changed (e.g. due to a change in camera
+    // position).
     let mut camera = Camera::new();
+    let mut controls = Controls::new();
 
     event_loop.run(move |event, _target, control_flow| match event {
         Event::WindowEvent {
@@ -74,41 +82,35 @@ async fn run() -> Result<(), Error> {
             event:
                 WindowEvent::KeyboardInput {
                     device_id: _,
-                    input: KeyboardInput {
-                        scancode: _,
-                        state: ElementState::Pressed,
-                        virtual_keycode: Some(keycode),
-                        ..
-                    },
+                    input,
                     is_synthetic: _,
                 },
         } => {
-            change_camera(&mut camera, keycode);
-            window.request_redraw();
+            controls.track_button_presses(input);
         }
         Event::RedrawRequested(_window_id) => {
-            match canvas.render(&camera) {
-                Ok(_) => (),
-                // Most errors (Outdated, Timeout) should be resolved by the next frame
-                Err(e) => error!("{e}"),
+            redraw_requested = true;
+        }
+        Event::MainEventsCleared => {
+            controls.change_camera(&mut camera);
+            if redraw_requested || controls.picture_changes() {
+                match canvas.render(&camera) {
+                    Ok(_) => (),
+                    // Most errors (Outdated, Timeout) should be resolved by the next frame
+                    Err(e) => error!("{e}"),
+                }
             }
+            redraw_requested = false;
+            // If the camera is not moving or zooming, we behave like a "normal" event driver window
+            // app patiently waiting for the next event and not waisting CPU cycles in a busy loop.
+            // Should we however change the picture we switch to polling as in a game loop, for
+            // smooth control.
+            *control_flow = if controls.picture_changes() {
+                ControlFlow::Poll
+            } else {
+                ControlFlow::Wait
+            };
         }
         _ => (),
     });
-}
-
-fn change_camera(camera: &mut Camera, keycode: VirtualKeyCode) {
-    // Step size
-    let s = 0.1;
-    match keycode {
-        VirtualKeyCode::Left => camera.change_pos(-s, 0.),
-        VirtualKeyCode::Up => camera.change_pos(0., s),
-        VirtualKeyCode::Right => camera.change_pos(s, 0.),
-        VirtualKeyCode::Down => camera.change_pos(0., -s),
-        // VirtualKeyCode::Back => (),
-        VirtualKeyCode::Period => camera.zoom(1.02),
-        VirtualKeyCode::Comma => camera.zoom(1. / 1.02),
-        _ => ()
-    };
-
 }

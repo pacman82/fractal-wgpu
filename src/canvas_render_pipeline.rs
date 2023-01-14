@@ -27,15 +27,12 @@ pub struct CanvasRenderPipeline {
 
 impl CanvasRenderPipeline {
     /// Creates a new render pipeline for our canvas.
-    /// 
+    ///
     /// # Parameters
-    /// 
+    ///
     /// * `device` is used to create the render pipeline, load shaders and bind buffers.
     /// * `surface_format` is the format of the target (output) for the render pipeline.
-    pub fn new(
-        device: &Device,
-        surface_format: TextureFormat,
-    ) -> Self {
+    pub fn new(device: &Device, surface_format: TextureFormat) -> Self {
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: Some("Canvas Shader"),
             source: ShaderSource::Wgsl(CANVAS_SHADER_SOURCE.into()),
@@ -112,11 +109,7 @@ impl CanvasRenderPipeline {
         );
     }
 
-    pub fn draw_to(
-        &self,
-        output: &TextureView,
-        encoder: &mut CommandEncoder,
-    ) {
+    pub fn draw_to(&self, output: &TextureView, encoder: &mut CommandEncoder) {
         let rpd = RenderPassDescriptor {
             label: Some("Main Render Pass"),
             color_attachments: &[Some(RenderPassColorAttachment {
