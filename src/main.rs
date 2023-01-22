@@ -36,7 +36,7 @@ async fn run() -> Result<(), Error> {
     // Window message loop.
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
-        .with_title("Hello WGPU")
+        .with_title("Fractal WGPU")
         .with_inner_size(LogicalSize::new(f64::from(WIDTH), f64::from(HEIGHT)))
         .build(&event_loop)?;
 

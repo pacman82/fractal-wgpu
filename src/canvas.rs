@@ -34,7 +34,7 @@ impl Canvas {
         height: u32,
         window: &Window,
     ) -> Result<Self, RequestDeviceError> {
-        let instance = wgpu::Instance::new(Backends::DX12);
+        let instance = wgpu::Instance::new(Backends::PRIMARY);
         let surface = unsafe { instance.create_surface(&window) };
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
