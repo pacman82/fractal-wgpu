@@ -1,9 +1,9 @@
-use std::iter::once;
 use anyhow::Error;
+use std::iter::once;
 use wgpu::{
-    Backends, CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features,
-    Limits, PresentMode, Queue, RequestAdapterOptions, Surface,
-    SurfaceConfiguration, SurfaceError, TextureFormat, TextureUsages, TextureViewDescriptor, InstanceDescriptor,
+    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features, Limits,
+    PresentMode, Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, SurfaceError,
+    TextureFormat, TextureUsages, TextureViewDescriptor,
 };
 use winit::window::Window;
 
@@ -29,12 +29,8 @@ pub struct Canvas {
 
 impl Canvas {
     /// Construct a new canvas and link it to a window. Height and width are specified in pixels.
-    pub async unsafe fn new(
-        width: u32,
-        height: u32,
-        window: &Window,
-    ) -> Result<Self, Error> {
-        let instance = wgpu::Instance::new(InstanceDescriptor { backends: Backends::PRIMARY, dx12_shader_compiler: wgpu::Dx12Compiler::Fxc});
+    pub async unsafe fn new(width: u32, height: u32, window: &Window) -> Result<Self, Error> {
+        let instance = wgpu::Instance::default();
         let surface = unsafe { instance.create_surface(&window)? };
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
