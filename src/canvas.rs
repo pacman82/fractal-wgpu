@@ -1,9 +1,9 @@
 use std::iter::once;
-
+use anyhow::Error;
 use wgpu::{
     Backends, CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features,
-    Limits, PresentMode, Queue, RequestAdapterOptions, RequestDeviceError, Surface,
-    SurfaceConfiguration, SurfaceError, TextureFormat, TextureUsages, TextureViewDescriptor,
+    Limits, PresentMode, Queue, RequestAdapterOptions, Surface,
+    SurfaceConfiguration, SurfaceError, TextureFormat, TextureUsages, TextureViewDescriptor, InstanceDescriptor,
 };
 use winit::window::Window;
 
@@ -33,9 +33,9 @@ impl Canvas {
         width: u32,
         height: u32,
         window: &Window,
-    ) -> Result<Self, RequestDeviceError> {
-        let instance = wgpu::Instance::new(Backends::PRIMARY);
-        let surface = unsafe { instance.create_surface(&window) };
+    ) -> Result<Self, Error> {
+        let instance = wgpu::Instance::new(InstanceDescriptor { backends: Backends::PRIMARY, dx12_shader_compiler: wgpu::Dx12Compiler::Fxc});
+        let surface = unsafe { instance.create_surface(&window)? };
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -56,8 +56,9 @@ impl Canvas {
                 trace_path,
             )
             .await?;
+        let caps = surface.get_capabilities(&adapter);
         // The first format in the array is the prefered one.
-        let format = surface.get_supported_formats(&adapter)[0];
+        let format = caps.formats[0];
 
         let render_pipeline = CanvasRenderPipeline::new(&device, format);
 
@@ -120,6 +121,7 @@ impl Canvas {
             height: self.height,
             present_mode: PresentMode::AutoVsync,
             alpha_mode: CompositeAlphaMode::Opaque,
+            view_formats: vec![],
         };
         self.surface.configure(&self.device, &config)
     }
