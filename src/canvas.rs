@@ -83,7 +83,7 @@ impl Canvas {
         }
     }
 
-    pub fn render(&self, camera: &Camera) -> Result<(), SurfaceError> {
+    pub fn render(&self, camera: &Camera, iterations: i32) -> Result<(), SurfaceError> {
         let output = match self.surface.get_current_texture() {
             Ok(output) => output,
             // Surface Lost => Reconfigure surface
@@ -102,7 +102,7 @@ impl Canvas {
                 label: Some("Render Encoder"),
             });
         self.render_pipeline
-            .update_buffers(&self.queue, camera.inv_view());
+            .update_buffers(&self.queue, camera.inv_view(), iterations);
         self.render_pipeline.draw_to(&view, &mut encoder);
         self.queue.submit(once(encoder.finish()));
         output.present();

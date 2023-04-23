@@ -1,6 +1,9 @@
 @group(0) @binding(0)
 var<uniform> INV_VIEW: mat3x2<f32>;
 
+@group(1) @binding(0)
+var<uniform> ITERATIONS: i32;
+
 struct VertexInput {
     @location(0) position: vec2<f32>,
 };
@@ -27,7 +30,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let c = in.coords;
     var z = vec2<f32>(0.0, 0.0);
     var i = 0;
-    let iter = 500;
+    let iter = ITERATIONS;
     for (i=iter; i != 0; i--){
         let real = z.x * z.x - z.y * z.y + c.x;
         let imag = 2.0 * z.x * z.y + c.y;

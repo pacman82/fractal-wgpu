@@ -17,6 +17,8 @@ pub struct Controls {
     right: bool,
     zoom_in: bool,
     zoom_out: bool,
+    inc_iter: bool,
+    dec_iter: bool,
 }
 
 impl Controls {
@@ -29,6 +31,8 @@ impl Controls {
             right: false,
             zoom_in: false,
             zoom_out: false,
+            inc_iter: false,
+            dec_iter: false,
         }
     }
 
@@ -48,6 +52,8 @@ impl Controls {
                 VirtualKeyCode::Down => self.down = is_pressed,
                 VirtualKeyCode::Period => self.zoom_in = is_pressed,
                 VirtualKeyCode::Comma => self.zoom_out = is_pressed,
+                VirtualKeyCode::M => self.inc_iter = is_pressed,
+                VirtualKeyCode::N => self.dec_iter = is_pressed,
                 _ => (),
             }
             if self.outdated_since.is_none() && self.picture_changes() {
@@ -56,26 +62,27 @@ impl Controls {
         };
     }
 
-    pub fn change_camera(&mut self, camera: &mut Camera) {
+    pub fn change_render_input(&mut self, camera: &mut Camera, iterations: &mut f32) {
         let now = Instant::now();
         if let Some(outdated_since) = self.outdated_since {
             let delta_time = now - outdated_since;
-            let delta = 1.0 * delta_time.as_secs_f32();
+            let delta_pos = 1.0 * delta_time.as_secs_f32();
             let delta_zoom = 1.0 + 0.4 * delta_time.as_secs_f32();
+            // Camera
             let mut delta_x = 0.;
             let mut delta_y = 0.;
             let mut zoom = 1.0;
             if self.left {
-                delta_x -= delta;
+                delta_x -= delta_pos;
             }
             if self.right {
-                delta_x += delta;
+                delta_x += delta_pos;
             }
             if self.up {
-                delta_y += delta;
+                delta_y += delta_pos;
             }
             if self.down {
-                delta_y -= delta;
+                delta_y -= delta_pos;
             }
             if self.zoom_in {
                 zoom *= delta_zoom;
@@ -85,6 +92,16 @@ impl Controls {
             }
             camera.change_pos(delta_x, delta_y);
             camera.zoom(zoom);
+            // Iterations
+            let delta_iter = 100.0 * delta_time.as_secs_f32();
+            if self.inc_iter {
+                *iterations += delta_iter;
+                *iterations = iterations.min(10_000.0);
+            }
+            if self.dec_iter {
+                *iterations -= delta_iter;
+                *iterations = iterations.max(1.0);
+            }
         }
         if self.picture_changes() {
             self.outdated_since = Some(now);
@@ -94,6 +111,13 @@ impl Controls {
     }
 
     pub fn picture_changes(&self) -> bool {
-        self.up || self.down || self.left || self.right || self.zoom_in || self.zoom_out
+        self.up
+            || self.down
+            || self.left
+            || self.right
+            || self.zoom_in
+            || self.zoom_out
+            || self.inc_iter
+            || self.dec_iter
     }
 }

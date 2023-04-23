@@ -7,7 +7,7 @@ use wgpu::{
     TextureView, VertexState,
 };
 
-use crate::shader::{inv_view_uniform, Vertex, CANVAS_SHADER_SOURCE};
+use crate::shader::{inv_view_uniform, iterations_uniform, Vertex, CANVAS_SHADER_SOURCE};
 
 /// A specialised render pipeline for our 2D canvas.
 ///
@@ -23,6 +23,12 @@ pub struct CanvasRenderPipeline {
     /// Used to pass the inverse view matrix in `inv_view_buffer` to the vertex shader in each
     /// render pass.
     inv_view_bind_group: BindGroup,
+    /// We hold the buffer explicitly, so we can manipulate its contents between frames to how much
+    /// elements of the sequence we calculate before we consider it convergent.
+    iter_buffer: Buffer,
+    /// Used to pass the number of iterations in `iter_buffer` to the fragment shader in each render
+    /// pass.
+    iter_bind_group: BindGroup,
 }
 
 impl CanvasRenderPipeline {
@@ -48,9 +54,11 @@ impl CanvasRenderPipeline {
         let (inv_view_layout, inv_view_buffer, inv_view_bind_group) =
             inv_view_uniform(device, initial_inv_view);
 
+        let (iter_layout, iter_buffer, iter_group) = iterations_uniform(device, 1);
+
         let layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[&inv_view_layout],
+            bind_group_layouts: &[&inv_view_layout, &iter_layout],
             push_constant_ranges: &[],
         });
 
@@ -97,16 +105,19 @@ impl CanvasRenderPipeline {
             inv_view_buffer,
             vertex_buffer,
             inv_view_bind_group,
+            iter_buffer,
+            iter_bind_group: iter_group,
         }
     }
 
     /// Updates the buffers submitted to the shaders in each frame.
-    pub fn update_buffers(&self, queue: &Queue, inv_view_matrix: [[f32; 2]; 3]) {
+    pub fn update_buffers(&self, queue: &Queue, inv_view_matrix: [[f32; 2]; 3], iterations: i32) {
         queue.write_buffer(
             &self.inv_view_buffer,
             0,
             bytemuck::cast_slice(&[inv_view_matrix]),
         );
+        queue.write_buffer(&self.iter_buffer, 0, bytemuck::bytes_of(&iterations));
     }
 
     pub fn draw_to(&self, output: &TextureView, encoder: &mut CommandEncoder) {
@@ -131,6 +142,7 @@ impl CanvasRenderPipeline {
         let mut render_pass = encoder.begin_render_pass(&rpd);
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.inv_view_bind_group, &[]);
+        render_pass.set_bind_group(1, &self.iter_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.draw(0..(VERTICES.len() as u32), 0..1);
     }

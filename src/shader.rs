@@ -30,6 +30,26 @@ const INV_VIEW_LAYOUT: BindGroupLayoutDescriptor = BindGroupLayoutDescriptor {
     }],
 };
 
+/// Number of iterations is bound as a Uniform variable available in the fragment shader stage. It
+/// is the number of iterations we calculate of the complex sequence before we consider it
+/// convergent.
+pub const ITERATIONS_LAYOUT: BindGroupLayoutDescriptor = BindGroupLayoutDescriptor {
+    label: Some("ITERATIONS BIND GROUP LAYOUT"),
+    entries: &[BindGroupLayoutEntry {
+        // Must match shader index
+        binding: 0,
+        // We only need this in the vertex shader
+        visibility: ShaderStages::FRAGMENT,
+        ty: BindingType::Buffer {
+            // All vertices see the same matrix
+            ty: BufferBindingType::Uniform,
+            has_dynamic_offset: false,
+            min_binding_size: None,
+        },
+        count: None,
+    }],
+};
+
 /// Vertex as used in the vertex buffer of our canvas shader.
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -63,6 +83,24 @@ pub fn inv_view_uniform(
     });
     let bind_group = device.create_bind_group(&BindGroupDescriptor {
         label: Some("Inverse View Matrix Bind Group"),
+        layout: &layout,
+        entries: &[BindGroupEntry {
+            binding: 0,
+            resource: buffer.as_entire_binding(),
+        }],
+    });
+    (layout, buffer, bind_group)
+}
+
+pub fn iterations_uniform(device: &Device, init: i32) -> (BindGroupLayout, Buffer, BindGroup) {
+    let layout = device.create_bind_group_layout(&ITERATIONS_LAYOUT);
+    let buffer = device.create_buffer_init(&BufferInitDescriptor {
+        label: Some("Iterations Buffer"),
+        contents: bytemuck::bytes_of(&init),
+        usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+    });
+    let bind_group = device.create_bind_group(&BindGroupDescriptor {
+        label: Some("Iterations Bind Group"),
         layout: &layout,
         entries: &[BindGroupEntry {
             binding: 0,

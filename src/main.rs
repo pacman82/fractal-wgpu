@@ -49,9 +49,15 @@ async fn run() -> Result<(), Error> {
     // Keeps track of request redraw request, e.g if the window has been partially hidden behind
     // another window, ro is resized.
     let mut redraw_requested = true;
-    // True if the picture we want to display on the canvas changed (e.g. due to a change in camera
-    // position).
+    // Camera position and zoom level. Determines which part of the fractal we see
     let mut camera = Camera::new();
+    // Number of iterations used to determine wether a point converges or not. How fast a point
+    // converges is used to determine the color of a pixel.
+    //
+    // We use a floating point variable to track the number of iterations, so we can easier adapt
+    // the number of iterations smoothly by pressing buttons for a period of time. This implies we
+    // need to keep track of differences smaller than 1 between frames.
+    let mut iterations = 500f32;
     let mut controls = Controls::new();
 
     event_loop.run(move |event, _target, control_flow| match event {
@@ -92,9 +98,9 @@ async fn run() -> Result<(), Error> {
             redraw_requested = true;
         }
         Event::MainEventsCleared => {
-            controls.change_camera(&mut camera);
+            controls.change_render_input(&mut camera, &mut iterations);
             if redraw_requested || controls.picture_changes() {
-                match canvas.render(&camera) {
+                match canvas.render(&camera, iterations.trunc() as i32) {
                     Ok(_) => (),
                     // Most errors (Outdated, Timeout) should be resolved by the next frame
                     Err(e) => error!("{e}"),
