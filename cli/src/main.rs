@@ -1,5 +1,4 @@
 use anyhow::{Context, Error};
-use camera::Camera;
 use controls::Controls;
 use log::error;
 use winit::{
@@ -9,13 +8,9 @@ use winit::{
     window::WindowBuilder,
 };
 
-use self::canvas::Canvas;
+use fractal_wgpu_lib::{Camera, Canvas};
 
-mod camera;
-mod canvas;
-mod canvas_render_pipeline;
 mod controls;
-mod shader;
 
 const WIDTH: u32 = 400;
 const HEIGHT: u32 = 400;

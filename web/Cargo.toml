@@ -1,0 +1,13 @@
+[package]
+name = "fractal-wgpu-web"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# We wanna run this crate in the browser using web assembly
+crate-type = ["cdylib"]
+
+[dependencies]
+fractal-wgpu-lib = { path = "../lib" }

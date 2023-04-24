@@ -7,7 +7,7 @@ use wgpu::{
 };
 use winit::window::Window;
 
-use crate::{camera::Camera, canvas_render_pipeline::CanvasRenderPipeline};
+use crate::{canvas_render_pipeline::CanvasRenderPipeline, Camera};
 
 pub struct Canvas {
     /// Width of output surface in pixels.
@@ -29,6 +29,10 @@ pub struct Canvas {
 
 impl Canvas {
     /// Construct a new canvas and link it to a window. Height and width are specified in pixels.
+    /// 
+    /// # Safety
+    /// 
+    /// * `window` must remain valid until canvas is dropped.
     pub async unsafe fn new(width: u32, height: u32, window: &Window) -> Result<Self, Error> {
         let instance = wgpu::Instance::default();
         let surface = unsafe { instance.create_surface(&window)? };
