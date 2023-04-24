@@ -1,15 +1,5 @@
-[package]
-name = "fractal-wgpu"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-anyhow = "1.0.68"
-bytemuck = { version = "1.12.3", features = ["derive"] }
-env_logger = "0.10.0"
-log = "0.4.17"
-pollster = "0.3.0"
-wgpu = "0.15.0"
-winit = "0.28.1"
+[workspace]
+# This resolver does not seem to be the default for workspaces somehow. Without this line we will
+# not compile on non OS-X systems, due to metal not being available and being resolved as a dependency.
+resolver = "2"
+members = ["cli"]
