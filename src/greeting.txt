@@ -1,5 +1,5 @@
 Hello dear user,
 
-this program renders fractals in real time and allows you to view different parts of it and zoom in and out. You can use the arrow keys to move the visible part up, down, left or right. In order to zoom in use period (`.`) and to zoom out comma (`,`). You can press and hold `m` to incerase the number of iterations used and `n` to decrease them (100 a second).
+this program renders fractals in real time and allows you to view different parts of it and zoom in and out. You can use the arrow keys to move the visible part up, down, left or right. In order to zoom in use period (`.`) and to zoom out comma (`,`). You can press and hold `m` to incerase the number of iterations used and `n` to decrease them.
 
 Have fun!

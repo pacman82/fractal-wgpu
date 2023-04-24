@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{time::{Instant, Duration}};
 
 use winit::event::{ElementState, KeyboardInput, VirtualKeyCode};
 
@@ -62,52 +62,61 @@ impl Controls {
         };
     }
 
-    pub fn change_render_input(&mut self, camera: &mut Camera, iterations: &mut f32) {
+    pub fn update_scene(&mut self, camera: &mut Camera, iterations: &mut f32) {
         let now = Instant::now();
         if let Some(outdated_since) = self.outdated_since {
             let delta_time = now - outdated_since;
-            let delta_pos = 1.0 * delta_time.as_secs_f32();
-            let delta_zoom = 1.0 + 0.4 * delta_time.as_secs_f32();
-            // Camera
-            let mut delta_x = 0.;
-            let mut delta_y = 0.;
-            let mut zoom = 1.0;
-            if self.left {
-                delta_x -= delta_pos;
-            }
-            if self.right {
-                delta_x += delta_pos;
-            }
-            if self.up {
-                delta_y += delta_pos;
-            }
-            if self.down {
-                delta_y -= delta_pos;
-            }
-            if self.zoom_in {
-                zoom *= delta_zoom;
-            }
-            if self.zoom_out {
-                zoom /= delta_zoom;
-            }
-            camera.change_pos(delta_x, delta_y);
-            camera.zoom(zoom);
+            self.update_camera(delta_time, camera);
             // Iterations
-            let delta_iter = 100.0 * delta_time.as_secs_f32();
+            //
+            // Change iterations in log space since we perceive the difference between 1 and 100
+            // iterations way stronger than the difference between 101 and 200.
+            let delta_iter = 0.5 * delta_time.as_secs_f32();
+            let mut ln_iter = iterations.ln();
             if self.inc_iter {
-                *iterations += delta_iter;
-                *iterations = iterations.min(10_000.0);
+                ln_iter += delta_iter;
+                ln_iter = ln_iter.min(10.0);
             }
             if self.dec_iter {
-                *iterations -= delta_iter;
-                *iterations = iterations.max(1.0);
+                ln_iter -= delta_iter;
+                ln_iter = ln_iter.max(0.0);
             }
+            *iterations = ln_iter.exp()
         }
         if self.picture_changes() {
             self.outdated_since = Some(now);
         } else {
             self.outdated_since = None;
         }
+    }
+
+    fn update_camera(&mut self, delta_time: Duration, camera: &mut Camera) {
+        let delta_pos = 1.0 * delta_time.as_secs_f32();
+        let delta_zoom = 1.0 + 0.4 * delta_time.as_secs_f32();
+        // Camera
+        let mut delta_x = 0.;
+        let mut delta_y = 0.;
+        let mut zoom = 1.0;
+        if self.left {
+            delta_x -= delta_pos;
+        }
+        if self.right {
+            delta_x += delta_pos;
+        }
+        if self.up {
+            delta_y += delta_pos;
+        }
+        if self.down {
+            delta_y -= delta_pos;
+        }
+        if self.zoom_in {
+            zoom *= delta_zoom;
+        }
+        if self.zoom_out {
+            zoom /= delta_zoom;
+        }
+        camera.change_pos(delta_x, delta_y);
+        camera.zoom(zoom);
     }
 
     pub fn picture_changes(&self) -> bool {

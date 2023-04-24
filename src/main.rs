@@ -98,7 +98,7 @@ async fn run() -> Result<(), Error> {
             redraw_requested = true;
         }
         Event::MainEventsCleared => {
-            controls.change_render_input(&mut camera, &mut iterations);
+            controls.update_scene(&mut camera, &mut iterations);
             if redraw_requested || controls.picture_changes() {
                 match canvas.render(&camera, iterations.trunc() as i32) {
                     Ok(_) => (),
