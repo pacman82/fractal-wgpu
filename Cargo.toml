@@ -2,4 +2,4 @@
 # This resolver does not seem to be the default for workspaces somehow. Without this line we will
 # not compile on non OS-X systems, due to metal not being available and being resolved as a dependency.
 resolver = "2"
-members = ["cli"]
+members = ["cli", "lib", "web"]

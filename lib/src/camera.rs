@@ -35,3 +35,9 @@ impl Camera {
         self.pos_y += delta_y / self.zoom
     }
 }
+
+impl Default for Camera {
+    fn default() -> Self {
+        Self::new()
+    }
+}

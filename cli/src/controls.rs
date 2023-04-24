@@ -2,7 +2,7 @@ use std::{time::{Instant, Duration}};
 
 use winit::event::{ElementState, KeyboardInput, VirtualKeyCode};
 
-use crate::camera::Camera;
+use fractal_wgpu_lib::Camera;
 
 /// Keep track of which buttons are pressed and decide how much the camera should move from one
 /// frame to the next.

@@ -419,10 +419,28 @@ dependencies = [
  "anyhow",
  "bytemuck",
  "env_logger",
+ "fractal-wgpu-lib",
  "log",
  "pollster",
  "wgpu",
  "winit",
+]
+
+[[package]]
+name = "fractal-wgpu-lib"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
+name = "fractal-wgpu-web"
+version = "0.1.0"
+dependencies = [
+ "fractal-wgpu-lib",
 ]
 
 [[package]]
