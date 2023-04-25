@@ -465,6 +465,7 @@ dependencies = [
  "fractal-wgpu-lib",
  "log",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "web-sys",
  "winit",
 ]
