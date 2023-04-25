@@ -1,9 +1,9 @@
 use anyhow::Error;
 use std::iter::once;
 use wgpu::{
-    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features, PresentMode,
-    Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, SurfaceError, TextureFormat,
-    TextureUsages, TextureViewDescriptor,
+    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features, Limits,
+    PresentMode, Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, SurfaceError,
+    TextureFormat, TextureUsages, TextureViewDescriptor,
 };
 use winit::window::Window;
 
