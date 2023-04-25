@@ -3,15 +3,23 @@
 
 <head>
     <meta charset="UTF-8">
+    <title>Learn WGPU</title>
+    <style>
+        canvas {
+            background-color: black;
+        }
+    </style>
     <title>Mandelbrot</title>
 </head>
 
 <body>
-</body>
+    <h1>Mandelbrot set</h1>
     <script type="module">
         import init from "./pkg/fractal_wgpu_web.js";
         init().then(() => {
             console.log("WASM Loaded");
         });
     </script>
+    <div id="fractal-canvas"></div>
+</body>
 </html>
