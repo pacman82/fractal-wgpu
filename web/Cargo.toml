@@ -10,4 +10,9 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
+console_error_panic_hook = "0.1.7"
+# Send logs to javascript console
+console_log = "1.0.0"
 fractal-wgpu-lib = { path = "../lib" }
+log = "0.4.17"
+wasm-bindgen = "0.2.84"

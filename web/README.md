@@ -7,5 +7,5 @@ A Rust crate rendering a fractal using Web GPU. Inteded to be run in the browser
 From workspace root:
 
 ```shell
-wasm-pack build
+wasm-pack build web --target web
 ```

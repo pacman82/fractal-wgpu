@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Mandelbrot</title>
+</head>
+
+<body>
+</body>
+    <script type="module">
+        import init from "./pkg/fractal_wgpu_web.js";
+        init().then(() => {
+            console.log("WASM Loaded");
+        });
+    </script>
+</html>
