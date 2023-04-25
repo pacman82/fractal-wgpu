@@ -1,15 +1,12 @@
 //! This module is supposed to contain the WASM interface for fractal wgpu.
 #![cfg(target_arch = "wasm32")]
-
 use wasm_bindgen::prelude::wasm_bindgen;
 use winit::{
-    event_loop::EventLoop,
-    platform::web::WindowExtWebSys,
-    window::WindowBuilder, dpi::LogicalSize,
+    dpi::LogicalSize, event_loop::EventLoop, platform::web::WindowExtWebSys, window::WindowBuilder,
 };
 
 #[wasm_bindgen(start)]
-pub fn start() {
+pub async fn start() {
     // Show panics in web logging console
     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
     console_log::init_with_level(log::Level::Info).expect("Couldn't initialize logger");

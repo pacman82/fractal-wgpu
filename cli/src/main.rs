@@ -52,7 +52,7 @@ async fn run() -> Result<(), Error> {
     // We use a floating point variable to track the number of iterations, so we can easier adapt
     // the number of iterations smoothly by pressing buttons for a period of time. This implies we
     // need to keep track of differences smaller than 1 between frames.
-    let mut iterations = 500f32;
+    let mut iterations = 256f32;
     let mut controls = Controls::new();
 
     event_loop.run(move |event, _target, control_flow| match event {
