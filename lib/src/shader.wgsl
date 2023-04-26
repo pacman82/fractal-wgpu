@@ -11,7 +11,8 @@ var<uniform> VERTEX_ARGS: VertexArgs;
 /// Uniform arguments for fragment shader, padedd to 16Bytes alignment for wegGL compatibility
 struct FragmentArgs {
     iterations: i32,
-    padding: vec3<i32>,
+    padding: i32,
+    padding2: vec2<i32>,
 }
 
 @group(1) @binding(0)
