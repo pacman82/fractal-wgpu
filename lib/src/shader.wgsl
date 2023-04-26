@@ -1,5 +1,12 @@
+/// Inverse view matrix with padding so its size is a multitude of 16 Bytes. This is required for
+/// running this shader with WebGL
+struct InvViewPadded {
+    matrix: mat3x2<f32>,
+    padding: vec2<f32>,
+}
+
 @group(0) @binding(0)
-var<uniform> INV_VIEW: mat3x2<f32>;
+var<uniform> INV_VIEW: InvViewPadded;
 
 @group(1) @binding(0)
 var<uniform> ITERATIONS: i32;
@@ -19,7 +26,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = vec4<f32>(plane.position, 0.0, 1.0);
-    out.coords = (INV_VIEW * vec3<f32>(plane.position, 1.0));
+    out.coords = (INV_VIEW.matrix * vec3<f32>(plane.position, 1.0));
     return out;
 }
 
