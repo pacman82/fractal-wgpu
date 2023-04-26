@@ -1,15 +1,21 @@
 /// Inverse view matrix with padding so its size is a multitude of 16 Bytes. This is required for
 /// running this shader with WebGL
-struct InvViewPadded {
-    matrix: mat3x2<f32>,
+struct VertexArgs {
+    inv_view: mat3x2<f32>,
     padding: vec2<f32>,
 }
 
 @group(0) @binding(0)
-var<uniform> INV_VIEW: InvViewPadded;
+var<uniform> VERTEX_ARGS: VertexArgs;
+
+/// Uniform arguments for fragment shader, padedd to 16Bytes alignment for wegGL compatibility
+struct FragmentArgs {
+    iterations: i32,
+    padding: vec3<i32>,
+}
 
 @group(1) @binding(0)
-var<uniform> ITERATIONS: i32;
+var<uniform> FRAGMENT_ARGS: FragmentArgs;
 
 struct VertexInput {
     @location(0) position: vec2<f32>,
@@ -26,7 +32,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = vec4<f32>(plane.position, 0.0, 1.0);
-    out.coords = (INV_VIEW.matrix * vec3<f32>(plane.position, 1.0));
+    out.coords = (VERTEX_ARGS.inv_view * vec3<f32>(plane.position, 1.0));
     return out;
 }
 
@@ -37,7 +43,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let c = in.coords;
     var z = vec2<f32>(0.0, 0.0);
     var i = 0;
-    let iter = ITERATIONS;
+    let iter = FRAGMENT_ARGS.iterations;
     for (i=iter; i != 0; i--){
         let real = z.x * z.x - z.y * z.y + c.x;
         let imag = 2.0 * z.x * z.y + c.y;

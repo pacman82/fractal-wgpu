@@ -76,7 +76,7 @@ pub fn inv_view_uniform(
     init: [[f32; 2]; 3],
 ) -> (BindGroupLayout, Buffer, BindGroup) {
     // Inverse view matrix padded to a multitude of 16bytes for compatibility with webGL.
-    let mut inv_view_padded = [[0f32;2]; 4];
+    let mut inv_view_padded = [[0f32; 2]; 4];
     inv_view_padded[..3].copy_from_slice(&init);
 
     let layout = device.create_bind_group_layout(&INV_VIEW_LAYOUT);
@@ -96,11 +96,17 @@ pub fn inv_view_uniform(
     (layout, buffer, bind_group)
 }
 
-pub fn iterations_uniform(device: &Device, init: i32) -> (BindGroupLayout, Buffer, BindGroup) {
+pub fn iterations_uniform(
+    device: &Device,
+    iterations: i32,
+) -> (BindGroupLayout, Buffer, BindGroup) {
+    let mut iterations_padded = [0; 4];
+    iterations_padded[0] = iterations;
+
     let layout = device.create_bind_group_layout(&ITERATIONS_LAYOUT);
     let buffer = device.create_buffer_init(&BufferInitDescriptor {
         label: Some("Iterations Buffer"),
-        contents: bytemuck::bytes_of(&init),
+        contents: bytemuck::cast_slice(&[iterations_padded]),
         usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
     });
     let bind_group = device.create_bind_group(&BindGroupDescriptor {
