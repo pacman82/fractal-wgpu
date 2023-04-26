@@ -2,7 +2,8 @@
 /// running this shader with WebGL
 struct VertexArgs {
     inv_view: mat3x2<f32>,
-    padding: vec2<f32>,
+    padding_0: i32,
+    padding_1: i32,
 }
 
 @group(0) @binding(0)
@@ -11,8 +12,9 @@ var<uniform> VERTEX_ARGS: VertexArgs;
 /// Uniform arguments for fragment shader, padedd to 16Bytes alignment for wegGL compatibility
 struct FragmentArgs {
     iterations: i32,
-    padding: i32,
-    padding2: vec2<i32>,
+    padding_0: i32,
+    padding_1: i32,
+    padding_2: i32,
 }
 
 @group(1) @binding(0)

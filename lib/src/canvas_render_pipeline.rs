@@ -112,12 +112,21 @@ impl CanvasRenderPipeline {
 
     /// Updates the buffers submitted to the shaders in each frame.
     pub fn update_buffers(&self, queue: &Queue, inv_view_matrix: [[f32; 2]; 3], iterations: i32) {
+        // Inverse view matrix padded to a multitude of 16bytes for compatibility with webGL.
+        let mut inv_view_padded = [[0f32; 2]; 4];
+        inv_view_padded[..3].copy_from_slice(&inv_view_matrix);
         queue.write_buffer(
             &self.inv_view_buffer,
             0,
-            bytemuck::cast_slice(&[inv_view_matrix]),
+            bytemuck::cast_slice(&inv_view_padded),
         );
-        queue.write_buffer(&self.iter_buffer, 0, bytemuck::bytes_of(&iterations));
+        let mut iterations_padded = [0i32; 4];
+        iterations_padded[0] = iterations;
+        queue.write_buffer(
+            &self.iter_buffer,
+            0,
+            bytemuck::cast_slice(&iterations_padded),
+        );
     }
 
     pub fn draw_to(&self, output: &TextureView, encoder: &mut CommandEncoder) {

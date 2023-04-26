@@ -106,7 +106,7 @@ pub fn iterations_uniform(
     let layout = device.create_bind_group_layout(&ITERATIONS_LAYOUT);
     let buffer = device.create_buffer_init(&BufferInitDescriptor {
         label: Some("Iterations Buffer"),
-        contents: bytemuck::cast_slice(&[iterations_padded]),
+        contents: bytemuck::cast_slice(&iterations_padded),
         usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
     });
     let bind_group = device.create_bind_group(&BindGroupDescriptor {
