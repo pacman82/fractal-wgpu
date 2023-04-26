@@ -1,9 +1,13 @@
 //! This module is supposed to contain the WASM interface for fractal wgpu.
 #![cfg(target_arch = "wasm32")]
+use fractal_wgpu_lib::Canvas;
 use wasm_bindgen::prelude::wasm_bindgen;
 use winit::{
     dpi::LogicalSize, event_loop::EventLoop, platform::web::WindowExtWebSys, window::WindowBuilder,
 };
+
+const WIDTH: u32 = 400;
+const HEIGHT: u32 = 400;
 
 #[wasm_bindgen(start)]
 pub async fn start() {
@@ -26,4 +30,10 @@ pub async fn start() {
             Some(())
         })
         .expect("Couldn't append canvas to document body.");
+
+    let _canvas = unsafe {
+        Canvas::new(WIDTH, HEIGHT, &window)
+            .await
+            .expect("Error requesting device for drawing")
+    };
 }

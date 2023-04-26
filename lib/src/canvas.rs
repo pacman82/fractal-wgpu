@@ -46,12 +46,17 @@ impl Canvas {
             .unwrap();
         // Can be used for API call tracing if that feature is enabled.
         let trace_path = None;
+        let limits = if cfg!(target_arch = "wasm32") {
+            Limits::downlevel_webgl2_defaults()
+        } else {
+            Limits::default()
+        };
         let (device, queue) = adapter
             .request_device(
                 &DeviceDescriptor {
                     label: None,
                     features: Features::empty(),
-                    limits: Limits::default(),
+                    limits,
                 },
                 trace_path,
             )
