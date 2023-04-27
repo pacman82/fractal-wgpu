@@ -7,7 +7,7 @@ use wgpu::{
     TextureView, VertexState,
 };
 
-use crate::shader::{inv_view_uniform, iterations_uniform, Vertex, CANVAS_SHADER_SOURCE};
+use crate::shader::{inv_view_uniform, iterations_uniform, Vertex, CANVAS_SHADER_SOURCE, inv_view_to_bytes};
 
 /// A specialised render pipeline for our 2D canvas.
 ///
@@ -112,13 +112,10 @@ impl CanvasRenderPipeline {
 
     /// Updates the buffers submitted to the shaders in each frame.
     pub fn update_buffers(&self, queue: &Queue, inv_view_matrix: [[f32; 2]; 3], iterations: i32) {
-        // Inverse view matrix padded to a multitude of 16bytes for compatibility with webGL.
-        let mut inv_view_padded = [[0f32; 2]; 4];
-        inv_view_padded[..3].copy_from_slice(&inv_view_matrix);
         queue.write_buffer(
             &self.inv_view_buffer,
             0,
-            bytemuck::cast_slice(&inv_view_padded),
+            inv_view_to_bytes(&inv_view_matrix).as_slice()
         );
         let mut iterations_padded = [0i32; 4];
         iterations_padded[0] = iterations;

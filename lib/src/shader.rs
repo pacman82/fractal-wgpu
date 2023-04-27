@@ -69,20 +69,25 @@ impl Vertex {
     };
 }
 
+/// Inverse view matrix padded to a multitude of 16bytes for compatibility with webGL.
+pub fn inv_view_to_bytes(inv_view: &[[f32;2]; 3]) -> [u8; 64] {
+    let mut inv_view_padded = [[0f32, 0f32]; 8];
+    inv_view_padded[0..3].copy_from_slice(inv_view.as_slice());
+    let mut bytes = [0; 64];
+    bytes.copy_from_slice(bytemuck::cast_slice(&[inv_view_padded]));
+    bytes
+}
+
 /// The inverse view matrix is used to control which part of the canvas the user can see. This
 /// return the layout, buffer and bindgroup for the inverse view matrix in one go.
 pub fn inv_view_uniform(
     device: &Device,
     init: [[f32; 2]; 3],
 ) -> (BindGroupLayout, Buffer, BindGroup) {
-    // Inverse view matrix padded to a multitude of 16bytes for compatibility with webGL.
-    let mut inv_view_padded = [[0f32; 2]; 4];
-    inv_view_padded[..3].copy_from_slice(&init);
-
     let layout = device.create_bind_group_layout(&INV_VIEW_LAYOUT);
     let buffer = device.create_buffer_init(&BufferInitDescriptor {
         label: Some("Inverse view matrix"),
-        contents: bytemuck::cast_slice(&[inv_view_padded]),
+        contents: inv_view_to_bytes(&init).as_slice(),
         usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
     });
     let bind_group = device.create_bind_group(&BindGroupDescriptor {
