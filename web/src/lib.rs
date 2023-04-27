@@ -1,10 +1,10 @@
-//! This module is supposed to contain the WASM interface for fractal wgpu.
+//! This module is to contains the WASM interface for fractal wgpu.
 #![cfg(target_arch = "wasm32")]
 use fractal_wgpu_lib::{Camera, Canvas};
 use log::error;
 use wasm_bindgen::prelude::wasm_bindgen;
 use winit::{
-    dpi::LogicalSize,
+    dpi::PhysicalSize,
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     platform::web::WindowExtWebSys,
@@ -21,7 +21,7 @@ pub async fn start() {
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
-        .with_inner_size(LogicalSize::new(f64::from(400), f64::from(400)))
+        .with_inner_size(PhysicalSize::new(f64::from(400), f64::from(400)))
         .build(&event_loop)
         .unwrap();
 
