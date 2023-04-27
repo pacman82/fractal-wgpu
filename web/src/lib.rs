@@ -21,7 +21,7 @@ pub async fn start() {
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
-        .with_inner_size(PhysicalSize::new(f64::from(400), f64::from(400)))
+        .with_inner_size(PhysicalSize::new(f64::from(WIDTH), f64::from(HEIGHT)))
         .build(&event_loop)
         .unwrap();
 
@@ -49,7 +49,7 @@ pub async fn start() {
     // We use a floating point variable to track the number of iterations, so we can easier adapt
     // the number of iterations smoothly by pressing buttons for a period of time. This implies we
     // need to keep track of differences smaller than 1 between frames.
-    let iterations = 256f32;
+    let iterations = 16f32;
 
     match canvas.render(&camera, iterations.trunc() as i32) {
         Ok(_) => (),

@@ -2,8 +2,7 @@
 /// running this shader with WebGL
 struct VertexArgs {
     inv_view: mat3x2<f32>,
-    padding_0: i32,
-    padding_1: i32,
+    padding_0: f32,
 }
 
 @group(0) @binding(0)
@@ -35,6 +34,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = vec4<f32>(plane.position, 0.0, 1.0);
+    // let inv_view = mat3x2(1.0, 0.0, 0.0, 1.0, -0.5, 0.0);
     out.coords = (VERTEX_ARGS.inv_view * vec3<f32>(plane.position, 1.0));
     return out;
 }
