@@ -19,6 +19,7 @@ impl Camera {
     pub fn inv_view(&self) -> [[f32; 2]; 3] {
         // [ 1/z  0   tx]    | x |   | x/z + tx |
         // [  0  1/z  ty]  x | y | = | y/z - ty |
+        //                   | 1 |
         [
             [1. / self.zoom, 0.],
             [0., 1. / self.zoom],

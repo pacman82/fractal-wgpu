@@ -71,10 +71,35 @@ impl Vertex {
 
 /// Inverse view matrix padded to a multitude of 16bytes for compatibility with webGL.
 pub fn inv_view_to_bytes(inv_view: &[[f32;2]; 3]) -> [u8; 64] {
-    let mut inv_view_padded = [[0f32, 0f32]; 8];
-    inv_view_padded[0..3].copy_from_slice(inv_view.as_slice());
+    // Only way to reliable get the matrix to the shader for webGL is to put it into a 4x4 matrix.
+    // There should be other ways, but empirically this is had been the only one working for me
+
+    // Original 3x2 matrix layout
+    // [ 1/z  0   tx]    | x |   | x/z + tx |
+    // [  0  1/z  ty]  x | y | = | y/z - ty |
+    //                   | 1 |
+    // [
+    //     [1/z, 0.],
+    //     [0., 1/z],
+    //     [x, y],
+    // ]
+    // Translated layout
+    // [ 1/z  0  0  tx]    | x |   | x/z + tx |
+    // [  0  1/z 0  ty]  x | y | = | y/z - ty |
+    // [  0   0  0  0 ]  x | 0 | = |     0    |
+    // [  0   0  0  0 ]  x | 1 | = |     0    |
+
+    let four_by_four = [
+        [inv_view[0][0], inv_view[0][1], 0., 0.],
+        [inv_view[1][0], inv_view[1][1], 0., 0.],
+        [0., 0., 0., 0.],
+        [inv_view[2][0], inv_view[2][1], 0., 0.],
+    ];
+
+
+
     let mut bytes = [0; 64];
-    bytes.copy_from_slice(bytemuck::cast_slice(&[inv_view_padded]));
+    bytes.copy_from_slice(bytemuck::cast_slice(&four_by_four));
     bytes
 }
 
