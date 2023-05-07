@@ -58,19 +58,30 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         z.x = real;
         z.y = imag;
     }
-    let conv = f32(i) / f32(iter);
+    let divergence = f32(i) / f32(iter);
 
-    var red: f32;
-    var blue: f32;
     if i == 0 {
-        red = 0.0;
-        blue = 0.0;
-    } else {
-        red = 1.0 - conv;
-        blue = conv;
+        return vec4<f32> (0.,0.,0.,1.);
     }
-    let green = 0.0;
 
-    let color = vec4<f32>(red, green, blue, 1.0);
-    return color;
+    // Most convergent colors first
+    let colors = array(
+        vec4<f32>(1.,1.,1.,1.),
+        vec4<f32>(0.,1.,0.,1.),
+        vec4<f32>(0.,0.,1.,1.),
+    );
+    let iterations_first_blend = iter / 10; // The last color also gets the remainder
+    var first_color = vec4(0.,0.,0.,0.);
+    var second_color = vec4(0.,0.,0.,0.);
+    var blend = 0.0;
+    if (i < iterations_first_blend) {
+        first_color = colors[0];
+        second_color = colors[1];
+        blend = f32(i) / f32(iterations_first_blend);
+    } else {
+        first_color = colors[1];
+        second_color = colors[2];
+        blend = f32(i - iterations_first_blend) / f32(iter - iterations_first_blend);
+    }
+    return (1. - blend) * first_color + blend * second_color;
 }

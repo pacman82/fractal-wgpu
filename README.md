@@ -26,4 +26,10 @@ Part of the interesst for me in this project came, what it would take to have th
 wasm-pack build web --target web
 ```
 
-Then navigate to `fractal.html` and open it in a browser.
+Now you must serve the `fractal.html` with a local server. You can e.g. use Python for this:
+
+```shel
+python -m http.server 8080 --bind 127.0.0.1 --directory ./web 
+```
+
+Then open `localhost:8080` in your browser and navigate to `fractal.html`.
