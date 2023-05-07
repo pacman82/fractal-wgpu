@@ -60,28 +60,35 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     }
     let divergence = f32(i) / f32(iter);
 
-    if i == 0 {
-        return vec4<f32> (0.,0.,0.,1.);
-    }
+    // if i == 0 {
+    //     return vec4<f32> (0.,0.,0.,1.);
+    // }
 
     // Most convergent colors first
     let colors = array(
-        vec4<f32>(1.,1.,1.,1.),
+        vec4<f32>(0.,0.,0.,1.),
         vec4<f32>(0.,1.,0.,1.),
+        vec4<f32>(1.,0.,0.,1.),
         vec4<f32>(0.,0.,1.,1.),
     );
-    let iterations_first_blend = iter / 10; // The last color also gets the remainder
+    // First half go into the first blend
+    let end_first_blend = iter / 2; // The last color also gets the remainder
+    let end_second_blend = iter / 4 + end_first_blend; // The last color also gets the remainder
     var first_color = vec4(0.,0.,0.,0.);
     var second_color = vec4(0.,0.,0.,0.);
     var blend = 0.0;
-    if (i < iterations_first_blend) {
+    if (i < end_first_blend) {
         first_color = colors[0];
         second_color = colors[1];
-        blend = f32(i) / f32(iterations_first_blend);
-    } else {
+        blend = f32(i) / f32(end_first_blend);
+    } else if (i < end_second_blend) {
         first_color = colors[1];
         second_color = colors[2];
-        blend = f32(i - iterations_first_blend) / f32(iter - iterations_first_blend);
+        blend = f32(i - end_first_blend) / f32(end_second_blend - end_first_blend);
+    } else {
+        first_color = colors[2];
+        second_color = colors[3];
+        blend = f32(i - end_second_blend) / f32(iter - end_second_blend);
     }
     return (1. - blend) * first_color + blend * second_color;
 }
