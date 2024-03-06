@@ -7,10 +7,10 @@ edition = "2021"
 
 [dependencies]
 fractal-wgpu-lib = { path = "../lib" }
-anyhow = "1.0.68"
-bytemuck = { version = "1.12.3", features = ["derive"] }
-env_logger = "0.10.0"
-log = "0.4.17"
+anyhow = "1.0.80"
+bytemuck = { version = "1.14.3", features = ["derive"] }
+env_logger = "0.10.2"
+log = "0.4.21"
 pollster = "0.3.0"
-wgpu = "0.15.0"
-winit = "0.28.1"
+wgpu = "0.15.1"
+winit = "0.28.7"
