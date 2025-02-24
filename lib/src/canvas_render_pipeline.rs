@@ -1,10 +1,5 @@
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    BindGroup, BlendState, Buffer, BufferUsages, Color, ColorTargetState, ColorWrites,
-    CommandEncoder, Device, FragmentState, MultisampleState, Operations, PipelineLayoutDescriptor,
-    PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor,
-    RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat,
-    TextureView, VertexState,
+    util::{BufferInitDescriptor, DeviceExt}, BindGroup, BlendState, Buffer, BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoder, Device, FragmentState, MultisampleState, Operations, PipelineCompilationOptions, PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, TextureView, VertexState
 };
 
 use crate::shader::{inv_view_uniform, iterations_uniform, Vertex, CANVAS_SHADER_SOURCE, inv_view_to_bytes};
@@ -67,17 +62,19 @@ impl CanvasRenderPipeline {
             layout: Some(&layout),
             vertex: VertexState {
                 module: &shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[Vertex::DESC],
+                compilation_options: PipelineCompilationOptions::default(),
             },
             fragment: Some(FragmentState {
                 module: &shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(ColorTargetState {
                     format: surface_format,
                     blend: Some(BlendState::REPLACE),
                     write_mask: ColorWrites::ALL,
                 })],
+                compilation_options: PipelineCompilationOptions::default(),
             }),
             primitive: PrimitiveState {
                 topology: PrimitiveTopology::TriangleStrip,
@@ -98,6 +95,10 @@ impl CanvasRenderPipeline {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
+            // According to the documentation, on most non-android platforms the OS manages its own
+            // chache. If not this could help with startuptime, by chaching the compiled shaders.
+            // For our little mandelbrot, we are likely good either way.
+            cache: None,
         });
 
         CanvasRenderPipeline {
@@ -139,10 +140,12 @@ impl CanvasRenderPipeline {
                         b: 0.7,
                         a: 1.0,
                     }),
-                    store: true,
+                    store: wgpu::StoreOp::Store,
                 },
             })],
             depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
         };
 
         let mut render_pass = encoder.begin_render_pass(&rpd);

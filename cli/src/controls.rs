@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use winit::event::{ElementState, KeyboardInput, VirtualKeyCode};
+use winit::{event::{ElementState, KeyEvent}, keyboard::{KeyCode, PhysicalKey}};
 
 use fractal_wgpu_lib::Camera;
 
@@ -36,24 +36,23 @@ impl Controls {
         }
     }
 
-    pub fn track_button_presses(&mut self, input: KeyboardInput) {
-        let KeyboardInput {
-            scancode: _,
+    pub fn track_button_presses(&mut self, input: KeyEvent) {
+        let KeyEvent {
             state,
-            virtual_keycode,
+            physical_key, 
             ..
         } = input;
-        if let Some(keycode) = virtual_keycode {
+        if let PhysicalKey::Code(keycode) = physical_key {
             let is_pressed = state == ElementState::Pressed;
             match keycode {
-                VirtualKeyCode::Left => self.left = is_pressed,
-                VirtualKeyCode::Up => self.up = is_pressed,
-                VirtualKeyCode::Right => self.right = is_pressed,
-                VirtualKeyCode::Down => self.down = is_pressed,
-                VirtualKeyCode::Period => self.zoom_in = is_pressed,
-                VirtualKeyCode::Comma => self.zoom_out = is_pressed,
-                VirtualKeyCode::M => self.inc_iter = is_pressed,
-                VirtualKeyCode::N => self.dec_iter = is_pressed,
+                KeyCode::ArrowLeft => self.left = is_pressed,
+                KeyCode::ArrowUp => self.up = is_pressed,
+                KeyCode::ArrowRight => self.right = is_pressed,
+                KeyCode::ArrowDown => self.down = is_pressed,
+                KeyCode::Period => self.zoom_in = is_pressed,
+                KeyCode::Comma => self.zoom_out = is_pressed,
+                KeyCode::KeyM => self.inc_iter = is_pressed,
+                KeyCode::KeyN => self.dec_iter = is_pressed,
                 _ => (),
             }
             if self.outdated_since.is_none() && self.picture_changes() {

@@ -29,7 +29,7 @@ fn main() -> Result<(), Error> {
 
 async fn run() -> Result<(), Error> {
     // Window message loop.
-    let event_loop = EventLoop::new();
+    let event_loop = EventLoop::new().unwrap();
     let window = WindowBuilder::new()
         .with_title("Fractal WGPU")
         .with_inner_size(LogicalSize::new(f64::from(WIDTH), f64::from(HEIGHT)))
@@ -42,7 +42,7 @@ async fn run() -> Result<(), Error> {
     };
 
     // Keeps track of request redraw request, e.g if the window has been partially hidden behind
-    // another window, ro is resized.
+    // another window, or is resized.
     let mut redraw_requested = true;
     // Camera position and zoom level. Determines which part of the fractal we see
     let mut camera = Camera::new();
@@ -55,12 +55,12 @@ async fn run() -> Result<(), Error> {
     let mut iterations = 256f32;
     let mut controls = Controls::new();
 
-    event_loop.run(move |event, _target, control_flow| match event {
+    event_loop.run(move |event, target| match event {
         Event::WindowEvent {
             window_id: _,
             event: WindowEvent::CloseRequested,
         } => {
-            *control_flow = ControlFlow::Exit;
+            target.exit();
         }
         Event::WindowEvent {
             window_id: _,
@@ -68,31 +68,27 @@ async fn run() -> Result<(), Error> {
         } => {
             canvas.resize(physical_size.width, physical_size.height);
         }
+        // TODO: check if we want to move camera, or resize?
+        // Event::WindowEvent {
+        //     window_id: _,
+        //     event:
+        //         WindowEvent::ScaleFactorChanged {
+        //             scale_factor: _,
+        //             inner_size_writer,
+        //         },
+        // } => {
+        // }
         Event::WindowEvent {
             window_id: _,
             event:
-                WindowEvent::ScaleFactorChanged {
-                    scale_factor: _,
-                    new_inner_size,
-                },
+                WindowEvent::KeyboardInput { device_id: _, event, is_synthetic: _ },
         } => {
-            canvas.resize(new_inner_size.width, new_inner_size.height);
+            controls.track_button_presses(event);
         }
-        Event::WindowEvent {
-            window_id: _,
-            event:
-                WindowEvent::KeyboardInput {
-                    device_id: _,
-                    input,
-                    is_synthetic: _,
-                },
-        } => {
-            controls.track_button_presses(input);
-        }
-        Event::RedrawRequested(_window_id) => {
+        Event::WindowEvent { window_id: _, event: WindowEvent::RedrawRequested } => {
             redraw_requested = true;
         }
-        Event::MainEventsCleared => {
+        Event::NewEvents(..) => {
             controls.update_scene(&mut camera, &mut iterations);
             if redraw_requested || controls.picture_changes() {
                 match canvas.render(&camera, iterations.trunc() as i32) {
@@ -101,17 +97,20 @@ async fn run() -> Result<(), Error> {
                     Err(e) => error!("{e}"),
                 }
             }
-            redraw_requested = false;
             // If the camera is not moving or zooming, we behave like a "normal" event driver window
             // app patiently waiting for the next event and not waisting CPU cycles in a busy loop.
             // Should we however change the picture we switch to polling as in a game loop, for
             // smooth control.
-            *control_flow = if controls.picture_changes() {
+            let control_flow = if controls.picture_changes() {
+                redraw_requested = true;
                 ControlFlow::Poll
             } else {
+                redraw_requested = false;
                 ControlFlow::Wait
             };
+            target.set_control_flow(control_flow);
         }
         _ => (),
-    });
+    }).unwrap();
+    Ok(())
 }
