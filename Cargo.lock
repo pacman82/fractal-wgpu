@@ -508,7 +508,6 @@ dependencies = [
  "fractal-wgpu-lib",
  "log",
  "pollster",
- "wgpu",
  "winit",
 ]
 
