@@ -11,6 +11,6 @@ anyhow = "1.0.80"
 bytemuck = { version = "1.14.3", features = ["derive"] }
 env_logger = "0.11.6"
 log = "0.4.21"
-pollster = "0.3.0"
+pollster = "0.4.0"
 wgpu = "0.15.1"
 winit = "0.28.7"
