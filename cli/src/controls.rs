@@ -1,6 +1,9 @@
 use std::time::{Duration, Instant};
 
-use winit::event::{ElementState, KeyboardInput, VirtualKeyCode};
+use winit::{
+    event::{ElementState, KeyEvent},
+    keyboard::{Key, NamedKey},
+};
 
 use fractal_wgpu_lib::Camera;
 
@@ -36,30 +39,35 @@ impl Controls {
         }
     }
 
-    pub fn track_button_presses(&mut self, input: KeyboardInput) {
-        let KeyboardInput {
-            scancode: _,
+    pub fn track_button_presses(&mut self, input: KeyEvent) {
+        let KeyEvent {
             state,
-            virtual_keycode,
+            logical_key,
             ..
         } = input;
-        if let Some(keycode) = virtual_keycode {
-            let is_pressed = state == ElementState::Pressed;
-            match keycode {
-                VirtualKeyCode::Left => self.left = is_pressed,
-                VirtualKeyCode::Up => self.up = is_pressed,
-                VirtualKeyCode::Right => self.right = is_pressed,
-                VirtualKeyCode::Down => self.down = is_pressed,
-                VirtualKeyCode::Period => self.zoom_in = is_pressed,
-                VirtualKeyCode::Comma => self.zoom_out = is_pressed,
-                VirtualKeyCode::M => self.inc_iter = is_pressed,
-                VirtualKeyCode::N => self.dec_iter = is_pressed,
-                _ => (),
+
+        let is_pressed = state == ElementState::Pressed;
+        match logical_key {
+            Key::Named(NamedKey::ArrowLeft) => self.left = is_pressed,
+            Key::Named(NamedKey::ArrowUp) => self.up = is_pressed,
+            Key::Named(NamedKey::ArrowRight) => self.right = is_pressed,
+            Key::Named(NamedKey::ArrowDown) => self.down = is_pressed,
+            Key::Character(text) => {
+                if text == "." {
+                    self.zoom_in = is_pressed
+                } else if text == "," {
+                    self.zoom_out = is_pressed
+                } else if text == "m" {
+                    self.inc_iter = is_pressed
+                } else if text == "n" {
+                    self.dec_iter = is_pressed
+                }
             }
-            if self.outdated_since.is_none() && self.picture_changes() {
-                self.outdated_since = Some(Instant::now())
-            }
-        };
+            _ => (),
+        }
+        if self.outdated_since.is_none() && self.picture_changes() {
+            self.outdated_since = Some(Instant::now())
+        }
     }
 
     pub fn update_scene(&mut self, camera: &mut Camera, iterations: &mut f32) {
