@@ -1,22 +1,20 @@
 use anyhow::Error;
 use std::iter::once;
 use wgpu::{
-    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features, Limits,
-    PresentMode, Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, SurfaceError,
-    TextureFormat, TextureUsages, TextureViewDescriptor,
+    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features, Limits, MemoryHints, PresentMode, Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, SurfaceError, TextureFormat, TextureUsages, TextureViewDescriptor
 };
 use winit::window::Window;
 
 use crate::{canvas_render_pipeline::CanvasRenderPipeline, Camera};
 
-pub struct Canvas {
+pub struct Canvas<'window> {
     /// Width of output surface in pixels.
     width: u32,
     /// Height of output surface in pixels.
     height: u32,
     /// The surface we are rendering to. It is linked to the inner part of the window passed in the
     /// constructor.
-    surface: Surface,
+    surface: Surface<'window>,
     /// The format of the texture. It is acquired using the preferred format of the adapter and we
     /// remember it, so we can recreate the surface if it becomes invalid.
     format: TextureFormat,
@@ -27,15 +25,15 @@ pub struct Canvas {
     render_pipeline: CanvasRenderPipeline,
 }
 
-impl Canvas {
+impl<'w> Canvas<'w> {
     /// Construct a new canvas and link it to a window. Height and width are specified in pixels.
     ///
     /// # Safety
     ///
     /// * `window` must remain valid until canvas is dropped.
-    pub async unsafe fn new(width: u32, height: u32, window: &Window) -> Result<Self, Error> {
+    pub async unsafe fn new(width: u32, height: u32, window: &'w Window) -> Result<Self, Error> {
         let instance = wgpu::Instance::default();
-        let surface = unsafe { instance.create_surface(&window)? };
+        let surface = instance.create_surface(window)?;
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -46,7 +44,7 @@ impl Canvas {
             .unwrap();
         // Can be used for API call tracing if that feature is enabled.
         let trace_path = None;
-        let limits = if cfg!(target_arch = "wasm32") {
+        let required_limits = if cfg!(target_arch = "wasm32") {
             Limits::downlevel_webgl2_defaults()
         } else {
             Limits::default()
@@ -55,8 +53,9 @@ impl Canvas {
             .request_device(
                 &DeviceDescriptor {
                     label: None,
-                    features: Features::empty(),
-                    limits,
+                    required_features: Features::empty(),
+                    required_limits,
+                    memory_hints: MemoryHints::default(),
                 },
                 trace_path,
             )
@@ -127,6 +126,7 @@ impl Canvas {
             present_mode: PresentMode::AutoVsync,
             alpha_mode: CompositeAlphaMode::Opaque,
             view_formats: vec![],
+            desired_maximum_frame_latency: 1,
         };
         self.surface.configure(&self.device, &config)
     }

@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.80"
 bytemuck = { version = "1.14.3", features = ["derive"] }
-wgpu = { version = "0.15.1", features = ["webgl"] }
+wgpu = { version = "24.0.1", features = ["webgl"] }
 winit = "0.28.7"
