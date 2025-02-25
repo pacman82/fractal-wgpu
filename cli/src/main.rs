@@ -29,7 +29,7 @@ fn main() -> Result<(), Error> {
 
 async fn run() -> Result<(), Error> {
     // Window message loop.
-    let event_loop = EventLoop::new();
+    let event_loop = EventLoop::new().unwrap();
     let window = WindowBuilder::new()
         .with_title("Fractal WGPU")
         .with_inner_size(LogicalSize::new(f64::from(WIDTH), f64::from(HEIGHT)))
@@ -55,63 +55,71 @@ async fn run() -> Result<(), Error> {
     let mut iterations = 256f32;
     let mut controls = Controls::new();
 
-    event_loop.run(move |event, _target, control_flow| match event {
-        Event::WindowEvent {
-            window_id: _,
-            event: WindowEvent::CloseRequested,
-        } => {
-            *control_flow = ControlFlow::Exit;
-        }
-        Event::WindowEvent {
-            window_id: _,
-            event: WindowEvent::Resized(physical_size),
-        } => {
-            canvas.resize(physical_size.width, physical_size.height);
-        }
-        Event::WindowEvent {
-            window_id: _,
-            event:
-                WindowEvent::ScaleFactorChanged {
-                    scale_factor: _,
-                    new_inner_size,
-                },
-        } => {
-            canvas.resize(new_inner_size.width, new_inner_size.height);
-        }
-        Event::WindowEvent {
-            window_id: _,
-            event:
-                WindowEvent::KeyboardInput {
-                    device_id: _,
-                    input,
-                    is_synthetic: _,
-                },
-        } => {
-            controls.track_button_presses(input);
-        }
-        Event::RedrawRequested(_window_id) => {
-            redraw_requested = true;
-        }
-        Event::MainEventsCleared => {
-            controls.update_scene(&mut camera, &mut iterations);
-            if redraw_requested || controls.picture_changes() {
-                match canvas.render(&camera, iterations.trunc() as i32) {
-                    Ok(_) => (),
-                    // Most errors (Outdated, Timeout) should be resolved by the next frame
-                    Err(e) => error!("{e}"),
-                }
+    event_loop
+        .run(move |event, target| match event {
+            Event::WindowEvent {
+                window_id: _,
+                event: WindowEvent::CloseRequested,
+            } => {
+                target.exit();
             }
-            redraw_requested = false;
-            // If the camera is not moving or zooming, we behave like a "normal" event driver window
-            // app patiently waiting for the next event and not waisting CPU cycles in a busy loop.
-            // Should we however change the picture we switch to polling as in a game loop, for
-            // smooth control.
-            *control_flow = if controls.picture_changes() {
-                ControlFlow::Poll
-            } else {
-                ControlFlow::Wait
-            };
-        }
-        _ => (),
-    });
+            Event::WindowEvent {
+                window_id: _,
+                event: WindowEvent::Resized(physical_size),
+            } => {
+                canvas.resize(physical_size.width, physical_size.height);
+            }
+            Event::WindowEvent {
+                window_id: _,
+                event:
+                    WindowEvent::ScaleFactorChanged {
+                        scale_factor: _,
+                        inner_size_writer: _,
+                    },
+            } => {
+                // We use mathematically cordinates for camera position rather than pixels, so we 
+                // are fine without explicitly handling scale factor changes.
+            }
+            Event::WindowEvent {
+                window_id: _,
+                event:
+                    WindowEvent::KeyboardInput {
+                        device_id: _,
+                        is_synthetic: _,
+                        event,
+                    },
+            } => {
+                controls.track_button_presses(event);
+            }
+            Event::WindowEvent {
+                window_id: _,
+                event: WindowEvent::RedrawRequested,
+            } => {
+                redraw_requested = true;
+            }
+            Event::NewEvents(_) => {
+                controls.update_scene(&mut camera, &mut iterations);
+                if redraw_requested || controls.picture_changes() {
+                    match canvas.render(&camera, iterations.trunc() as i32) {
+                        Ok(_) => (),
+                        // Most errors (Outdated, Timeout) should be resolved by the next frame
+                        Err(e) => error!("{e}"),
+                    }
+                }
+                redraw_requested = false;
+                // If the camera is not moving or zooming, we behave like a "normal" event driver window
+                // app patiently waiting for the next event and not waisting CPU cycles in a busy loop.
+                // Should we however change the picture we switch to polling as in a game loop, for
+                // smooth control.
+                if controls.picture_changes() {
+                    target.set_control_flow(ControlFlow::Poll);
+                    ControlFlow::Poll
+                } else {
+                    ControlFlow::Wait
+                };
+            }
+            _ => (),
+        })
+        .unwrap();
+    Ok(())
 }

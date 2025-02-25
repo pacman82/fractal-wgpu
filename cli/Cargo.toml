@@ -12,4 +12,4 @@ bytemuck = { version = "1.14.3", features = ["derive"] }
 env_logger = "0.11.6"
 log = "0.4.21"
 pollster = "0.4.0"
-winit = "0.28.7"
+winit = "0.29.0"
