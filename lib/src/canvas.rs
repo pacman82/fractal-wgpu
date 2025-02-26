@@ -1,9 +1,8 @@
 use anyhow::Error;
 use std::iter::once;
 use wgpu::{
-    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features, Limits, MemoryHints, PresentMode, Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, SurfaceError, TextureFormat, TextureUsages, TextureViewDescriptor
+    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features, Limits, MemoryHints, PresentMode, Queue, RequestAdapterOptions, RequestDeviceError, Surface, SurfaceConfiguration, SurfaceError, SurfaceTarget, TextureFormat, TextureUsages, TextureViewDescriptor
 };
-use winit::window::Window;
 
 use crate::{canvas_render_pipeline::CanvasRenderPipeline, Camera};
 
@@ -31,7 +30,7 @@ impl<'w> Canvas<'w> {
     /// # Safety
     ///
     /// * `window` must remain valid until canvas is dropped.
-    pub async unsafe fn new(width: u32, height: u32, window: &'w Window) -> Result<Self, Error> {
+    pub async fn new(width: u32, height: u32, window: impl Into<SurfaceTarget<'w>>) -> Result<Self, Error> {
         let instance = wgpu::Instance::default();
         let surface = instance.create_surface(window)?;
         let adapter = instance
@@ -59,7 +58,7 @@ impl<'w> Canvas<'w> {
                 },
                 trace_path,
             )
-            .await?;
+            .await.map_err(map_request_device_error)?;
         let caps = surface.get_capabilities(&adapter);
         // The first format in the array is the prefered one.
         let format = caps.formats[0];
@@ -130,4 +129,18 @@ impl<'w> Canvas<'w> {
         };
         self.surface.configure(&self.device, &config)
     }
+}
+
+// We need to have platform specific error mapping, as on the `wasm32` target the error type is not
+// `Send`
+
+#[cfg(not(target_arch = "wasm32"))]
+fn map_request_device_error(error: RequestDeviceError) -> Error {
+    error.into()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn map_request_device_error(error: RequestDeviceError) -> Error {
+    use anyhow::anyhow;
+    anyhow!("{}", error.to_string())
 }

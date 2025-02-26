@@ -9,4 +9,3 @@ edition = "2021"
 anyhow = "1.0.80"
 bytemuck = { version = "1.14.3", features = ["derive"] }
 wgpu = { version = "24.0.1", features = ["webgl"] }
-winit = "0.29.0"
