@@ -2,7 +2,8 @@
 #![cfg(target_arch = "wasm32")]
 use fractal_wgpu_lib::{Camera, Canvas};
 use log::error;
-use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::{prelude::wasm_bindgen, JsCast};
+use web_sys::{HtmlCanvasElement, WebGl2RenderingContext};
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
@@ -19,27 +20,35 @@ pub async fn start() {
     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
     console_log::init_with_level(log::Level::Info).expect("Couldn't initialize logger");
 
-    let event_loop = EventLoop::new();
+    let event_loop = EventLoop::new().unwrap();
     let window = WindowBuilder::new()
         .with_inner_size(PhysicalSize::new(f64::from(WIDTH), f64::from(HEIGHT)))
         .build(&event_loop)
         .unwrap();
 
-    web_sys::window()
-        .and_then(|win| win.document())
-        .and_then(|doc| {
-            let dst = doc.get_element_by_id("fractal-canvas")?;
-            let canvas = web_sys::Element::from(window.canvas());
-            dst.append_child(&canvas).ok()?;
-            Some(())
-        })
-        .expect("Couldn't append canvas to document body.");
+    let document = web_sys::window().unwrap().document().unwrap();
+    let canvas = document.get_element_by_id("fractal-canvas").unwrap();
+    let canvas: HtmlCanvasElement = canvas.dyn_into::<HtmlCanvasElement>().unwrap();
+    // let canvas = web_sys::window()
+    //     .and_then(|win| win.document())
+    //     .and_then(|doc| {
+    //         let dst = doc.get_element_by_id("fractal-canvas")?;
+    //         let canvas: HtmlCanvasElement = dst.dyn_into().map_err(|_| ()).ok()?;
+    //         // // dst.append_child(&canvas).ok()?;
+    //         Some(canvas)
+    //     })
+    //     .expect("Couldn't append canvas to document body.");
 
-    let mut canvas = unsafe {
-        Canvas::new(WIDTH, HEIGHT, &window)
-            .await
-            .expect("Error requesting device for drawing")
-    };
+    let context = canvas
+        .get_context("webgl2")
+        .expect("Could not get webgl2 context.")
+        .unwrap()
+        .dyn_into::<WebGl2RenderingContext>()
+        .expect("Could not convert context to WebGl2RenderingContext.");
+
+    let mut canvas = Canvas::new(WIDTH, HEIGHT, &context)
+        .await
+        .expect("Error requesting device for drawing");
 
     // Camera position and zoom level. Determines which part of the fractal we see
     let camera = Camera::new();
@@ -57,12 +66,12 @@ pub async fn start() {
         Err(e) => error!("Could not render frame: {e}"),
     }
 
-    event_loop.run(move |event, _target, control_flow| match event {
+    event_loop.run(move |event, target| match event {
         Event::WindowEvent {
             window_id: _,
             event: WindowEvent::CloseRequested,
         } => {
-            *control_flow = ControlFlow::Exit;
+            target.exit();
         }
         Event::WindowEvent {
             window_id: _,
@@ -72,24 +81,17 @@ pub async fn start() {
         }
         Event::WindowEvent {
             window_id: _,
-            event:
-                WindowEvent::ScaleFactorChanged {
-                    scale_factor: _,
-                    new_inner_size,
-                },
+            event: WindowEvent::RedrawRequested,
         } => {
-            canvas.resize(new_inner_size.width, new_inner_size.height);
-        }
-        Event::RedrawRequested(_window_id) => {
             match canvas.render(&camera, iterations.trunc() as i32) {
                 Ok(_) => (),
                 // Most errors (Outdated, Timeout) should be resolved by the next frame
                 Err(e) => error!("Could not render frame: {e}"),
             }
         }
-        Event::MainEventsCleared => {
+        Event::NewEvents(_) => {
             window.request_redraw();
-            *control_flow = ControlFlow::Wait;
+            target.set_control_flow(ControlFlow::Wait);
         }
         _ => (),
     });
