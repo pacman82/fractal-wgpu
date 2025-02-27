@@ -35,11 +35,9 @@ async fn run() -> Result<(), Error> {
         .with_inner_size(LogicalSize::new(f64::from(WIDTH), f64::from(HEIGHT)))
         .build(&event_loop)?;
 
-    let mut canvas = unsafe {
-        Canvas::new(WIDTH, HEIGHT, &window)
-            .await
-            .context("Error requesting device for drawing")?
-    };
+    let mut canvas = Canvas::new(WIDTH, HEIGHT, &window)
+        .await
+        .context("Error requesting device for drawing")?;
 
     // Keeps track of request redraw request, e.g if the window has been partially hidden behind
     // another window, ro is resized.
@@ -77,7 +75,7 @@ async fn run() -> Result<(), Error> {
                         inner_size_writer: _,
                     },
             } => {
-                // We use mathematically cordinates for camera position rather than pixels, so we 
+                // We use mathematically cordinates for camera position rather than pixels, so we
                 // are fine without explicitly handling scale factor changes.
             }
             Event::WindowEvent {

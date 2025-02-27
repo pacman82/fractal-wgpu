@@ -1,7 +1,10 @@
 use anyhow::Error;
 use std::iter::once;
 use wgpu::{
-    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features, Limits, MemoryHints, PresentMode, Queue, RequestAdapterOptions, RequestDeviceError, Surface, SurfaceConfiguration, SurfaceError, SurfaceTarget, TextureFormat, TextureUsages, TextureViewDescriptor
+    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Features, Limits,
+    MemoryHints, PresentMode, Queue, RequestAdapterOptions, RequestDeviceError, Surface,
+    SurfaceConfiguration, SurfaceError, SurfaceTarget, TextureFormat, TextureUsages,
+    TextureViewDescriptor,
 };
 
 use crate::{canvas_render_pipeline::CanvasRenderPipeline, Camera};
@@ -26,11 +29,11 @@ pub struct Canvas<'window> {
 
 impl<'w> Canvas<'w> {
     /// Construct a new canvas and link it to a window. Height and width are specified in pixels.
-    ///
-    /// # Safety
-    ///
-    /// * `window` must remain valid until canvas is dropped.
-    pub async fn new(width: u32, height: u32, window: impl Into<SurfaceTarget<'w>>) -> Result<Self, Error> {
+    pub async fn new(
+        width: u32,
+        height: u32,
+        window: impl Into<SurfaceTarget<'w>>,
+    ) -> Result<Self, Error> {
         let instance = wgpu::Instance::default();
         let surface = instance.create_surface(window)?;
         let adapter = instance
@@ -58,7 +61,8 @@ impl<'w> Canvas<'w> {
                 },
                 trace_path,
             )
-            .await.map_err(map_request_device_error)?;
+            .await
+            .map_err(map_request_device_error)?;
         let caps = surface.get_capabilities(&adapter);
         // The first format in the array is the prefered one.
         let format = caps.formats[0];

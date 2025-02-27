@@ -1,8 +1,15 @@
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt}, BindGroup, BlendState, Buffer, BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoder, Device, FragmentState, MultisampleState, Operations, PipelineCompilationOptions, PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, StoreOp, TextureFormat, TextureView, VertexState
+    util::{BufferInitDescriptor, DeviceExt},
+    BindGroup, BlendState, Buffer, BufferUsages, Color, ColorTargetState, ColorWrites,
+    CommandEncoder, Device, FragmentState, MultisampleState, Operations,
+    PipelineCompilationOptions, PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, Queue,
+    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
+    ShaderModuleDescriptor, ShaderSource, StoreOp, TextureFormat, TextureView, VertexState,
 };
 
-use crate::shader::{inv_view_uniform, iterations_uniform, Vertex, CANVAS_SHADER_SOURCE, inv_view_to_bytes};
+use crate::shader::{
+    inv_view_to_bytes, inv_view_uniform, iterations_uniform, Vertex, CANVAS_SHADER_SOURCE,
+};
 
 /// A specialised render pipeline for our 2D canvas.
 ///
@@ -116,7 +123,7 @@ impl CanvasRenderPipeline {
         queue.write_buffer(
             &self.inv_view_buffer,
             0,
-            inv_view_to_bytes(&inv_view_matrix).as_slice()
+            inv_view_to_bytes(&inv_view_matrix).as_slice(),
         );
         let mut iterations_padded = [0i32; 4];
         iterations_padded[0] = iterations;

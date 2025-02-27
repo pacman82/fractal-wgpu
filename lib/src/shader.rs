@@ -70,7 +70,7 @@ impl Vertex {
 }
 
 /// Inverse view matrix padded to a multitude of 16bytes for compatibility with webGL.
-pub fn inv_view_to_bytes(inv_view: &[[f32;2]; 3]) -> [u8; 64] {
+pub fn inv_view_to_bytes(inv_view: &[[f32; 2]; 3]) -> [u8; 64] {
     // Only way to reliable get the matrix to the shader for webGL is to put it into a 4x4 matrix.
     // There should be other ways, but empirically this is had been the only one working for me
 
@@ -95,8 +95,6 @@ pub fn inv_view_to_bytes(inv_view: &[[f32;2]; 3]) -> [u8; 64] {
         [0., 0., 0., 0.],
         [inv_view[2][0], inv_view[2][1], 0., 0.],
     ];
-
-
 
     let mut bytes = [0; 64];
     bytes.copy_from_slice(bytemuck::cast_slice(&four_by_four));
