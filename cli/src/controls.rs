@@ -41,9 +41,7 @@ impl Controls {
 
     pub fn track_button_presses(&mut self, input: KeyEvent) {
         let KeyEvent {
-            state,
-            logical_key,
-            ..
+            state, logical_key, ..
         } = input;
 
         let is_pressed = state == ElementState::Pressed;

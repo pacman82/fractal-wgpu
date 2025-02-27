@@ -3,7 +3,8 @@
 use fractal_wgpu_lib::{Camera, Canvas};
 use log::error;
 use wasm_bindgen::{prelude::wasm_bindgen, JsCast};
-use web_sys::{HtmlCanvasElement, WebGl2RenderingContext};
+use web_sys::HtmlCanvasElement;
+use wgpu::SurfaceTarget;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
@@ -27,26 +28,14 @@ pub async fn start() {
         .unwrap();
 
     let document = web_sys::window().unwrap().document().unwrap();
-    let canvas = document.get_element_by_id("fractal-canvas").unwrap();
+    let div = document.get_element_by_id("fractal-canvas").unwrap();
+    let canvas = web_sys::Element::from(window.canvas().unwrap());
     let canvas: HtmlCanvasElement = canvas.dyn_into::<HtmlCanvasElement>().unwrap();
-    // let canvas = web_sys::window()
-    //     .and_then(|win| win.document())
-    //     .and_then(|doc| {
-    //         let dst = doc.get_element_by_id("fractal-canvas")?;
-    //         let canvas: HtmlCanvasElement = dst.dyn_into().map_err(|_| ()).ok()?;
-    //         // // dst.append_child(&canvas).ok()?;
-    //         Some(canvas)
-    //     })
-    //     .expect("Couldn't append canvas to document body.");
+    div.append_child(&canvas).unwrap();
 
-    let context = canvas
-        .get_context("webgl2")
-        .expect("Could not get webgl2 context.")
-        .unwrap()
-        .dyn_into::<WebGl2RenderingContext>()
-        .expect("Could not convert context to WebGl2RenderingContext.");
+    let surface_target = SurfaceTarget::Canvas(canvas);
 
-    let mut canvas = Canvas::new(WIDTH, HEIGHT, &context)
+    let mut canvas = Canvas::new(WIDTH, HEIGHT, surface_target)
         .await
         .expect("Error requesting device for drawing");
 
@@ -66,33 +55,35 @@ pub async fn start() {
         Err(e) => error!("Could not render frame: {e}"),
     }
 
-    event_loop.run(move |event, target| match event {
-        Event::WindowEvent {
-            window_id: _,
-            event: WindowEvent::CloseRequested,
-        } => {
-            target.exit();
-        }
-        Event::WindowEvent {
-            window_id: _,
-            event: WindowEvent::Resized(physical_size),
-        } => {
-            canvas.resize(physical_size.width, physical_size.height);
-        }
-        Event::WindowEvent {
-            window_id: _,
-            event: WindowEvent::RedrawRequested,
-        } => {
-            match canvas.render(&camera, iterations.trunc() as i32) {
-                Ok(_) => (),
-                // Most errors (Outdated, Timeout) should be resolved by the next frame
-                Err(e) => error!("Could not render frame: {e}"),
+    event_loop
+        .run(move |event, target| match event {
+            Event::WindowEvent {
+                window_id: _,
+                event: WindowEvent::CloseRequested,
+            } => {
+                target.exit();
             }
-        }
-        Event::NewEvents(_) => {
-            window.request_redraw();
-            target.set_control_flow(ControlFlow::Wait);
-        }
-        _ => (),
-    });
+            Event::WindowEvent {
+                window_id: _,
+                event: WindowEvent::Resized(physical_size),
+            } => {
+                canvas.resize(physical_size.width, physical_size.height);
+            }
+            Event::WindowEvent {
+                window_id: _,
+                event: WindowEvent::RedrawRequested,
+            } => {
+                match canvas.render(&camera, iterations.trunc() as i32) {
+                    Ok(_) => (),
+                    // Most errors (Outdated, Timeout) should be resolved by the next frame
+                    Err(e) => error!("Could not render frame: {e}"),
+                }
+            }
+            Event::NewEvents(_) => {
+                window.request_redraw();
+                target.set_control_flow(ControlFlow::Wait);
+            }
+            _ => (),
+        })
+        .unwrap();
 }
