@@ -8,9 +8,9 @@ use wgpu::SurfaceTarget;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::{self, ControlFlow, EventLoop},
     platform::web::WindowExtWebSys,
-    window::WindowBuilder,
+    window::Window,
 };
 const WIDTH: u32 = 400;
 const HEIGHT: u32 = 400;
@@ -22,9 +22,11 @@ pub async fn start() {
     console_log::init_with_level(log::Level::Info).expect("Couldn't initialize logger");
 
     let event_loop = EventLoop::new().unwrap();
-    let window = WindowBuilder::new()
-        .with_inner_size(PhysicalSize::new(f64::from(WIDTH), f64::from(HEIGHT)))
-        .build(&event_loop)
+    let window = event_loop
+        .create_window(
+            Window::default_attributes()
+                .with_inner_size(PhysicalSize::new(f64::from(WIDTH), f64::from(HEIGHT))),
+        )
         .unwrap();
 
     let document = web_sys::window().unwrap().document().unwrap();

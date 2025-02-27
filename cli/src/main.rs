@@ -5,7 +5,7 @@ use winit::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
+    window::Window,
 };
 
 use fractal_wgpu_lib::{Camera, Canvas};
@@ -30,10 +30,11 @@ fn main() -> Result<(), Error> {
 async fn run() -> Result<(), Error> {
     // Window message loop.
     let event_loop = EventLoop::new().unwrap();
-    let window = WindowBuilder::new()
-        .with_title("Fractal WGPU")
-        .with_inner_size(LogicalSize::new(f64::from(WIDTH), f64::from(HEIGHT)))
-        .build(&event_loop)?;
+    let window = event_loop.create_window(
+        Window::default_attributes()
+            .with_title("Fractal WGPU")
+            .with_inner_size(LogicalSize::new(f64::from(WIDTH), f64::from(HEIGHT))),
+    ).unwrap();
 
     let mut canvas = Canvas::new(WIDTH, HEIGHT, &window)
         .await
