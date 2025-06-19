@@ -45,7 +45,6 @@ impl<'w> Canvas<'w> {
             .await
             .unwrap();
         // Can be used for API call tracing if that feature is enabled.
-        let trace_path = None;
         let required_limits = if cfg!(target_arch = "wasm32") {
             Limits::downlevel_webgl2_defaults()
         } else {
@@ -58,8 +57,8 @@ impl<'w> Canvas<'w> {
                     required_features: Features::empty(),
                     required_limits,
                     memory_hints: MemoryHints::default(),
+                    trace: wgpu::Trace::Off,
                 },
-                trace_path,
             )
             .await
             .map_err(map_request_device_error)?;

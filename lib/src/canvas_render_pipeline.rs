@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BlendState, Buffer, BufferUsages, Color, ColorTargetState, ColorWrites,
@@ -74,7 +72,7 @@ impl CanvasRenderPipeline {
                 entry_point: Some("vs_main"),
                 buffers: &[Vertex::DESC],
                 compilation_options: PipelineCompilationOptions {
-                    constants: &HashMap::new(),
+                    constants: &[],
                     zero_initialize_workgroup_memory: false,
                 },
             },
@@ -87,7 +85,7 @@ impl CanvasRenderPipeline {
                     write_mask: ColorWrites::ALL,
                 })],
                 compilation_options: PipelineCompilationOptions {
-                    constants: &HashMap::new(),
+                    constants: &[],
                     zero_initialize_workgroup_memory: false,
                 },
             }),
