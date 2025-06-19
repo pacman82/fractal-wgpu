@@ -28,12 +28,13 @@ fn main() -> Result<(), Error> {
     pollster::block_on(run())
 }
 
-struct App<'w> {
+struct App {
     /// Keeps track of request redraw request, e.g if the window has been partially hidden behind
     /// another window, ro is resized.
     redraw_requested: bool,
-    /// We can only initialize the canvas after the window is created in `resumed`.
-    canvas: Canvas<'w>,
+    /// We can only initialize the canvas after the window is created in `resumed`. The canvas also
+    /// takes owenership of the window, so it can have a static lifetime.
+    canvas: Option<Canvas<'static>>,
     /// Number of iterations used to determine wether a point converges or not. How fast a point
     /// converges is used to determine the color of a pixel.
     ///
@@ -46,24 +47,32 @@ struct App<'w> {
     controls: Controls,
 }
 
-impl<'w> App<'w> {
-    async fn new(window: &'w Window) -> Result<Self, Error> {
-        let canvas = pollster::block_on(async move { Canvas::new(WIDTH, HEIGHT, window).await })
-            .context("Error requesting device for drawing")
-            .unwrap();
+impl App {
+    fn new() -> Result<Self, Error> {
         Ok(Self {
-            iterations: 256f32,
             redraw_requested: true,
-            canvas,
+            canvas: None,
+            iterations: 256f32,
             camera: Camera::new(),
             controls: Controls::new(),
         })
     }
 }
 
-impl ApplicationHandler for App<'_> {
-    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
+impl ApplicationHandler for App {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        let window = event_loop
+            .create_window(
+                Window::default_attributes()
+                    .with_title("Fractal WGPU")
+                    .with_inner_size(LogicalSize::new(f64::from(WIDTH), f64::from(HEIGHT))),
+            )
+            .unwrap();
 
+        let canvas = pollster::block_on(async move { Canvas::new(WIDTH, HEIGHT, window).await })
+            .context("Error requesting device for drawing")
+            .unwrap();
+        self.canvas = Some(canvas);
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
@@ -72,8 +81,9 @@ impl ApplicationHandler for App<'_> {
                 event_loop.exit();
             }
             WindowEvent::Resized(physical_size) => {
-                self.canvas
-                    .resize(physical_size.width, physical_size.height);
+                if let Some(canvas) = self.canvas.as_mut() {
+                    canvas.resize(physical_size.width, physical_size.height);
+                }
             }
             WindowEvent::ScaleFactorChanged {
                 scale_factor: _,
@@ -97,13 +107,14 @@ impl ApplicationHandler for App<'_> {
     }
 
     fn new_events(&mut self, event_loop: &ActiveEventLoop, _cause: winit::event::StartCause) {
+        let Some(canvas) = self.canvas.as_mut() else {
+            // Window has not been initialized yet, we cannot do anything.
+            return;
+        };
         self.controls
             .update_scene(&mut self.camera, &mut self.iterations);
         if self.redraw_requested || self.controls.picture_changes() {
-            match self
-                .canvas
-                .render(&self.camera, self.iterations.trunc() as i32)
-            {
+            match canvas.render(&self.camera, self.iterations.trunc() as i32) {
                 Ok(_) => (),
                 // Most errors (Outdated, Timeout) should be resolved by the next frame
                 Err(e) => error!("{e}"),
@@ -125,14 +136,7 @@ impl ApplicationHandler for App<'_> {
 async fn run() -> Result<(), Error> {
     // Window message loop.
     let event_loop = EventLoop::new().unwrap();
-    let window = event_loop
-        .create_window(
-            Window::default_attributes()
-                .with_title("Fractal WGPU")
-                .with_inner_size(LogicalSize::new(f64::from(WIDTH), f64::from(HEIGHT))),
-        )
-        .unwrap();
-    let mut app = App::new(&window).await?;
+    let mut app = App::new()?;
     event_loop.run_app(&mut app).unwrap();
     Ok(())
 }
